@@ -6,6 +6,8 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.math.BigDecimal;
+
 @Entity
 @Data
 @NoArgsConstructor
@@ -17,10 +19,16 @@ public class ItemEntity {
     @Column(name = "id", nullable = false)
     private Long id;
 
-    @ManyToOne(optional = false)
-    @JoinColumn(name = "item_type_entity_id", nullable = false)
-    private ItemTypeEntity itemTypeEntity;
-
     @Column(name = "serial_number", nullable = false)
     private String serialNumber;
+
+    @Column(name = "name", nullable = false)
+    private String name;
+
+    @ManyToOne(optional = false)
+    @JoinColumn(name = "attached_to_inventory_entity_id", nullable = false)
+    private InventoryEntity attachedToInventoryEntity;
+
+    @Column(name = "quantity", nullable = false)
+    private BigDecimal quantity;
 }

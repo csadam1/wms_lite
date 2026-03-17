@@ -32,4 +32,15 @@ public class ContainerEntity {
 
     @Column(name = "status", nullable = false)
     private Enum<ContainerStatusEnum> status;
+
+    @Column(name = "removed", nullable = false)
+    private Boolean removed;
+
+    @OneToOne(optional = false, orphanRemoval = true)
+    @JoinColumn(name = "inventory_entity_id", nullable = false)
+    private InventoryEntity inventoryEntity;
+
+    @ManyToOne(optional = false)
+    @JoinColumn(name = "attached_to_inventory_entity_id", nullable = false)
+    private InventoryEntity attachedToInventoryEntity;
 }

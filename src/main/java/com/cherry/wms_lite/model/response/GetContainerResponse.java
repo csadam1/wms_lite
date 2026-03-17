@@ -7,12 +7,9 @@ import lombok.NoArgsConstructor;
 
 import java.time.Instant;
 
-@Data
-@NoArgsConstructor
-@AllArgsConstructor
-public class GetContainerResponse {
-    private String containerType;
-    private String containerSerialNumber;
-    private Instant createdAt;
-    private Enum<ContainerStatusEnum> status;
-}
+public record GetContainerResponse(Long id,
+                                   String containerType,
+                                   String containerSerialNumber,
+                                   Instant createdAt,
+                                   Enum<ContainerStatusEnum> status)
+{ }

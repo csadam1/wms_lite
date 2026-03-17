@@ -11,7 +11,7 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class ItemTypeEntity {
+public class StorageLocationEntity {
     @Id
     @GeneratedValue(strategy = GenerationType.SEQUENCE)
     @Column(name = "id", nullable = false)
@@ -22,4 +22,8 @@ public class ItemTypeEntity {
 
     @Column(name = "description")
     private String description;
+
+    @OneToOne(optional = false, orphanRemoval = true)
+    @JoinColumn(name = "inventory_entity_id", nullable = false)
+    private InventoryEntity inventoryEntity;
 }
