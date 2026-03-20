@@ -1,4 +1,4 @@
-package com.cherry.wms_lite.model.response;
+package com.cherry.wms_lite.model.response.container;
 
 import com.cherry.wms_lite.model.enumerate.ContainerStatusEnum;
 

@@ -1,7 +1,7 @@
 package com.cherry.wms_lite.controller.container;
 
-import com.cherry.wms_lite.model.request.ContainerRequest;
-import com.cherry.wms_lite.model.response.ContainerResponse;
+import com.cherry.wms_lite.model.request.container.ContainerRequest;
+import com.cherry.wms_lite.model.response.container.ContainerResponse;
 import com.cherry.wms_lite.model.validation.OnCreate;
 import com.cherry.wms_lite.model.validation.OnUpdate;
 import com.cherry.wms_lite.service.container.ContainerService;

@@ -4,8 +4,8 @@ import com.cherry.wms_lite.model.entity.ContainerEntity;
 import com.cherry.wms_lite.model.entity.ContainerTypeEntity;
 import com.cherry.wms_lite.model.entity.InventoryEntity;
 import com.cherry.wms_lite.model.enumerate.LocationTypeEnum;
-import com.cherry.wms_lite.model.request.ContainerRequest;
-import com.cherry.wms_lite.model.response.ContainerResponse;
+import com.cherry.wms_lite.model.request.container.ContainerRequest;
+import com.cherry.wms_lite.model.response.container.ContainerResponse;
 import com.cherry.wms_lite.repository.container.ContainerRepository;
 import com.cherry.wms_lite.service.container_type.ContainerTypeService;
 import com.cherry.wms_lite.service.inventory.InventoryService;
@@ -13,6 +13,7 @@ import com.cherry.wms_lite.service.storage_location.StorageLocationService;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
@@ -39,26 +40,72 @@ public class ContainerService {
         return this.mapToGetContainerResponse(this.getContainerEntityById(containerId));
     }
 
+    @Transactional
     public ContainerResponse createContainer(final ContainerRequest request) {
-        this.validateSerialNumberUniqueness(request.getSerialNumber());
+        this.validateSerialNumberUniqueness(request.serialNumber());
 
-        ContainerTypeEntity containerType = containerTypeService.getContainerTypeByName(request.getContainerTypeName());
-        InventoryEntity attachedToInventoryEntity = request.getLocationTypeEnum().equals(LocationTypeEnum.CONTAINER)
-                ? this.getContainerInventory(request.getLocationName())
-                : storageLocationService.getStorageLocationInventoryByName(request.getLocationName());
+        ContainerTypeEntity containerType = containerTypeService.getContainerTypeByName(request.containerTypeName());
+        InventoryEntity attachedToInventoryEntity = request.locationTypeEnum().equals(LocationTypeEnum.CONTAINER)
+                ? this.getContainerInventory(request.locationName())
+                : storageLocationService.getStorageLocationInventoryByName(request.locationName());
 
         ContainerEntity containerEntity = ContainerEntity.builder()
-                .serialNumber(request.getSerialNumber())
+                .serialNumber(request.serialNumber())
                 .containerType(containerType)
                 .inventoryEntity(inventoryService.getNewInventory())
                 .attachedToInventoryEntity(attachedToInventoryEntity)
                 .createdAt(Instant.now())
-                .status(request.getStatus())
+                .status(request.status())
                 .removed(false)
                 .build();
 
         ContainerEntity savedContainer = containerRepository.save(containerEntity);
         return this.mapToGetContainerResponse(savedContainer);
+    }
+
+    @Transactional
+    public ContainerResponse updateContainer(final Long containerId, final ContainerRequest request) {
+        ContainerEntity containerEntity = this.getContainerEntityById(containerId);
+        // Update serial number if provided
+        if (request.serialNumber() != null && !request.serialNumber().isBlank()) {
+            this.validateSerialNumberUniqueness(request.serialNumber());
+            containerEntity.setSerialNumber(request.serialNumber());
+        }
+
+        // Update status if provided
+        if (request.status() != null) {
+            containerEntity.setStatus(request.status());
+        }
+
+        // Update container type if provided
+        if (request.containerTypeName() != null && !request.containerTypeName().isBlank()) {
+            ContainerTypeEntity containerType =
+                    containerTypeService.getContainerTypeByName(request.containerTypeName());
+            containerEntity.setContainerType(containerType);
+        }
+
+        // Update location if provided
+        if (request.locationName() != null && !request.locationName().isBlank()
+                && request.locationTypeEnum() != null)
+        {
+            InventoryEntity attachedToInventoryEntity = this.getContainerAttachedToInventory(request.locationName(),
+                    request.locationTypeEnum());
+            containerEntity.setAttachedToInventoryEntity(attachedToInventoryEntity);
+        }
+
+        ContainerEntity updatedContainer = containerRepository.save(containerEntity);
+        return this.mapToGetContainerResponse(updatedContainer);
+    }
+
+    @Transactional
+    public void removeContainer(final Long containerId) {
+        if (!containerRepository.existsById(containerId)) {
+            throw new EntityNotFoundException("Container not found with id: " + containerId);
+        }
+
+        ContainerEntity containerEntity = this.getContainerEntityById(containerId);
+        containerEntity.setRemoved(true);
+        containerRepository.save(containerEntity);
     }
 
     private void validateSerialNumberUniqueness(final String serialNumber) {
@@ -73,50 +120,11 @@ public class ContainerService {
                 .getInventoryEntity();
     }
 
-    public ContainerResponse updateContainer(final Long containerId, final ContainerRequest request) {
-        ContainerEntity containerEntity = this.getContainerEntityById(containerId);
-        // Update serial number if provided
-        if (request.getSerialNumber() != null && !request.getSerialNumber().isBlank()) {
-            this.validateSerialNumberUniqueness(request.getSerialNumber());
-            containerEntity.setSerialNumber(request.getSerialNumber());
-        }
-
-        // Update status if provided
-        if (request.getStatus() != null) {
-            containerEntity.setStatus(request.getStatus());
-        }
-
-        // Update container type if provided
-        if (request.getContainerTypeName() != null && !request.getContainerTypeName().isBlank()) {
-            ContainerTypeEntity containerType =
-                    containerTypeService.getContainerTypeByName(request.getContainerTypeName());
-            containerEntity.setContainerType(containerType);
-        }
-
-        // Update location if provided
-        if (request.getLocationName() != null && !request.getLocationName().isBlank()
-                && request.getLocationTypeEnum() != null)
-        {
-            InventoryEntity attachedToInventoryEntity = this.getContainerAttachedToInventory(request.getLocationName(),
-                    request.getLocationTypeEnum());
-            containerEntity.setAttachedToInventoryEntity(attachedToInventoryEntity);
-        }
-
-        ContainerEntity updatedContainer = containerRepository.save(containerEntity);
-        return this.mapToGetContainerResponse(updatedContainer);
-    }
-
     private InventoryEntity getContainerAttachedToInventory(final String locationName,
                                                             final LocationTypeEnum locationTypeEnum)
     {
         return locationTypeEnum.equals(LocationTypeEnum.CONTAINER) ? this.getContainerInventory(locationName)
                 : storageLocationService.getStorageLocationInventoryByName(locationName);
-    }
-
-    public void removeContainer(final Long containerId) {
-        ContainerEntity containerEntity = this.getContainerEntityById(containerId);
-        containerEntity.setRemoved(true);
-        containerRepository.save(containerEntity);
     }
 
     private ContainerResponse mapToGetContainerResponse(final ContainerEntity containerEntity) {
