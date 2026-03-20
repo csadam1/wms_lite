@@ -19,11 +19,11 @@ public class ItemEntity {
     @Column(name = "id", nullable = false)
     private Long id;
 
-    @Column(name = "serial_number", nullable = false)
+    @Column(name = "serial_number", nullable = false, unique = true)
     private String serialNumber;
 
-    @Column(name = "name", nullable = false)
-    private String name;
+    @Column(name = "material", nullable = false)
+    private String material;
 
     @ManyToOne(optional = false)
     @JoinColumn(name = "attached_to_inventory_entity_id", nullable = false)

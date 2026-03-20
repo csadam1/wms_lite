@@ -20,7 +20,7 @@ public class ContainerEntity {
     @Column(name = "id", nullable = false)
     private Long id;
 
-    @Column(name = "serial_number", nullable = false)
+    @Column(name = "serial_number", nullable = false, unique = true)
     private String serialNumber;
 
     @ManyToOne(optional = false)
@@ -31,7 +31,7 @@ public class ContainerEntity {
     private Instant createdAt;
 
     @Column(name = "status", nullable = false)
-    private Enum<ContainerStatusEnum> status;
+    private ContainerStatusEnum status;
 
     @Column(name = "removed", nullable = false)
     private Boolean removed;

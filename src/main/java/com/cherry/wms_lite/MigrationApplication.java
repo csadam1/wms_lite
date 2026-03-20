@@ -58,7 +58,7 @@ public class MigrationApplication {
     private ItemEntity get100NailEntity(final InventoryEntity inventoryEntity) {
         return ItemEntity.builder()
                 .serialNumber("TK-NAIL-PACK-12345")
-                .name("TK-ITEM-0002")
+                .material("TK-ITEM-0002")
                 .attachedToInventoryEntity(inventoryEntity)
                 .quantity(BigDecimal.valueOf(100))
                 .build();
@@ -67,7 +67,7 @@ public class MigrationApplication {
     private ItemEntity getSteeringWheelItem(final InventoryEntity inventoryEntity) {
         return ItemEntity.builder()
                 .serialNumber("TK-STW-12345")
-                .name("TK-ITEM-0001")
+                .material("TK-ITEM-0001")
                 .attachedToInventoryEntity(inventoryEntity)
                 .quantity(BigDecimal.valueOf(1))
                 .build();
