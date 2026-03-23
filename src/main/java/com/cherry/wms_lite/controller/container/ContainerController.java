@@ -42,7 +42,7 @@ public class ContainerController {
 
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> removeContainerById(@PathVariable(name = "id") final Long containerId) {
-        containerService.removeContainer(containerId);
+        containerService.removeContainerById(containerId);
         return ResponseEntity.noContent().build();
     }
 }

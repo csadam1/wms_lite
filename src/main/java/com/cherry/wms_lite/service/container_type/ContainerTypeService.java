@@ -17,7 +17,7 @@ public class ContainerTypeService {
     private final ContainerTypeRepository containerTypeRepository;
     public ContainerTypeEntity getContainerTypeByName(final String containerTypeName) {
         return containerTypeRepository.findByName(containerTypeName)
-                .orElseThrow(() -> new EntityNotFoundException("Container type not found: " + containerTypeName));
+                .orElseThrow(() -> new EntityNotFoundException("Container type not found with name: " + containerTypeName));
     }
 
     public List<ContainerTypeResponse> getAllContainerTypes() {
@@ -50,7 +50,7 @@ public class ContainerTypeService {
     }
 
     @Transactional
-    public void removeContainerType(final Long containerTypeId) {
+    public void removeContainerTypeById(final Long containerTypeId) {
         if (!containerTypeRepository.existsById(containerTypeId)) {
             throw new EntityNotFoundException("Container type not found with id: " + containerTypeId);
         }
@@ -68,9 +68,7 @@ public class ContainerTypeService {
 
     private ContainerTypeEntity mapToEntity(final ContainerTypeRequest request) {
         ContainerTypeEntity entity = new ContainerTypeEntity();
-        entity.setName(request.name());
-        entity.setDescription(request.description());
-        entity.setCapacity(request.capacity());
+        updateEntityFromRequest(entity, request);
         return entity;
     }
 
