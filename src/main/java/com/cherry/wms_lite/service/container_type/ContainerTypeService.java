@@ -43,7 +43,9 @@ public class ContainerTypeService {
 
     @Transactional
     public ContainerTypeResponse createContainerType(final ContainerTypeRequest request) {
-        validateNameUniqueness(request.name());
+        validator.validateUniqueness(request.name(), containerTypeRepository::findByName,
+                CONTAINER_TYPE_WITH_NAME_EXIST.formatted(request.name())
+        );
         ContainerTypeEntity entity = mapToEntity(request);
         ContainerTypeEntity saved = containerTypeRepository.save(entity);
         return mapToResponse(saved);
@@ -56,7 +58,9 @@ public class ContainerTypeService {
                         () -> new EntityNotFoundException(CONTAINER_TYPE_NOT_FOUND_WITH_ID.formatted(containerTypeId)));
 
         if (!validator.isNullOrEmpty(request.name())) {
-            validateNameUniqueness(request.name());
+            validator.validateUniqueness(request.name(), containerTypeRepository::findByName,
+                    CONTAINER_TYPE_WITH_NAME_EXIST.formatted(request.name())
+            );
             entity.setName(request.name());
         }
 
@@ -80,12 +84,6 @@ public class ContainerTypeService {
         containerTypeRepository.deleteById(containerTypeId);
     }
 
-    private void validateNameUniqueness(final String name) {
-        containerTypeRepository.findByName(name)
-                .ifPresent(containerType -> {
-                    throw new IllegalArgumentException(CONTAINER_TYPE_WITH_NAME_EXIST.formatted(name));
-                });
-    }
 
     private ContainerTypeResponse mapToResponse(final ContainerTypeEntity entity) {
         return new ContainerTypeResponse(

@@ -45,7 +45,9 @@ public class StorageLocationService {
 
     @Transactional
     public StorageLocationResponse createStorageLocation(final StorageLocationRequest request) {
-        validateNameUniqueness(request.name());
+        validator.validateUniqueness(request.name(), storageLocationRepository::findByName,
+                SL_WITH_NAME_EXIST.formatted(request.name())
+        );
         StorageLocationEntity entity = mapToEntity(request);
         entity.setInventoryEntity(inventoryService.getNewInventory());
         StorageLocationEntity saved = storageLocationRepository.save(entity);
@@ -60,7 +62,9 @@ public class StorageLocationService {
                 .orElseThrow(() -> new EntityNotFoundException(SL_NOT_FOUND_WITH_ID.formatted(storageLocationId)));
 
         if (!validator.isNullOrEmpty(request.name())) {
-            validateNameUniqueness(request.name());
+            validator.validateUniqueness(request.name(), storageLocationRepository::findByName,
+                    SL_WITH_NAME_EXIST.formatted(request.name())
+            );
             storageLocationEntity.setName(request.name());
         }
 
@@ -80,12 +84,6 @@ public class StorageLocationService {
         storageLocationRepository.deleteById(storageLocationId);
     }
 
-    private void validateNameUniqueness(final String name) {
-        storageLocationRepository.findByName(name)
-                .ifPresent(storageLocation -> {
-                    throw new IllegalArgumentException(SL_WITH_NAME_EXIST.formatted(name));
-                });
-    }
 
     private StorageLocationEntity mapToEntity(final StorageLocationRequest request) {
         StorageLocationEntity entity = new StorageLocationEntity();

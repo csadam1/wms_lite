@@ -47,7 +47,9 @@ public class ContainerService {
 
     @Transactional
     public ContainerResponse createContainer(final ContainerRequest request) {
-        validateSerialNumberUniqueness(request.serialNumber());
+        validator.validateUniqueness(request.serialNumber(), containerRepository::findBySerialNumber,
+                CONTAINER_WITH_SERIAL_EXIST.formatted(request.serialNumber())
+        );
 
         ContainerTypeEntity containerType = containerTypeService.getContainerTypeByName(request.containerTypeName());
         InventoryEntity attachedToInventoryEntity =
@@ -69,25 +71,23 @@ public class ContainerService {
     @Transactional
     public ContainerResponse updateContainer(final Long containerId, final ContainerRequest request) {
         ContainerEntity containerEntity = getContainerEntityById(containerId);
-        // Update serial number if provided
         if (!validator.isNullOrEmpty(request.serialNumber())) {
-            validateSerialNumberUniqueness(request.serialNumber());
+            validator.validateUniqueness(request.serialNumber(), containerRepository::findBySerialNumber,
+                    CONTAINER_WITH_SERIAL_EXIST.formatted(request.serialNumber())
+            );
             containerEntity.setSerialNumber(request.serialNumber());
         }
 
-        // Update status if provided
-        if (request.status() != null) {
+        if (!validator.isNullOrEmpty(request.status())) {
             containerEntity.setStatus(request.status());
         }
 
-        // Update container type if provided
         if (!validator.isNullOrEmpty(request.containerTypeName())) {
             ContainerTypeEntity containerType =
                     containerTypeService.getContainerTypeByName(request.containerTypeName());
             containerEntity.setContainerType(containerType);
         }
 
-        // Update location if provided
         if (!validator.isNullOrEmpty(request.locationName()) && !validator.isNullOrEmpty(request.locationTypeEnum())) {
             containerEntity.setAttachedToInventoryEntity(
                     getContainerAttachedToInventory(request.locationName(), request.locationTypeEnum()));
@@ -109,12 +109,6 @@ public class ContainerService {
                 : storageLocationService.getStorageLocationInventoryByName(locationName);
     }
 
-    private void validateSerialNumberUniqueness(final String serialNumber) {
-        containerRepository.findBySerialNumber(serialNumber)
-                .ifPresent(container -> {
-                    throw new IllegalArgumentException(CONTAINER_WITH_SERIAL_EXIST.formatted(serialNumber));
-                });
-    }
 
     private InventoryEntity getContainerInventory(final String serialNumber) {
         return getContainerEntityByName(serialNumber)
