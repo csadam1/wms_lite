@@ -1,5 +1,6 @@
 package com.cherry.wms_lite.service.container;
 
+import com.cherry.wms_lite.common.Validator;
 import com.cherry.wms_lite.model.entity.ContainerEntity;
 import com.cherry.wms_lite.model.entity.ContainerTypeEntity;
 import com.cherry.wms_lite.model.entity.InventoryEntity;
@@ -22,10 +23,16 @@ import java.util.List;
 @Service
 @RequiredArgsConstructor
 public class ContainerService {
+    private static final String CONTAINER_WITH_SERIAL_EXIST = "Container with serial number already exists: %s";
+    private static final String CONTAINER_NOT_FOUND_WITH_ID = "Container not found with id: %s";
+    private static final String CONTAINER_NOT_FOUND_WITH_SERIAL_NUMBER = "Container not found with serial number: %s";
+
+
     private final ContainerRepository containerRepository;
     private final StorageLocationService storageLocationService;
     private final InventoryService inventoryService;
     private final ContainerTypeService containerTypeService;
+    private final Validator validator;
 
     public List<ContainerResponse> getAllContainers() {
         return containerRepository.findAll().stream()
@@ -63,7 +70,7 @@ public class ContainerService {
     public ContainerResponse updateContainer(final Long containerId, final ContainerRequest request) {
         ContainerEntity containerEntity = getContainerEntityById(containerId);
         // Update serial number if provided
-        if (isValid(request.serialNumber())) {
+        if (!validator.isNullOrEmpty(request.serialNumber())) {
             validateSerialNumberUniqueness(request.serialNumber());
             containerEntity.setSerialNumber(request.serialNumber());
         }
@@ -74,14 +81,14 @@ public class ContainerService {
         }
 
         // Update container type if provided
-        if (isValid(request.containerTypeName())) {
+        if (!validator.isNullOrEmpty(request.containerTypeName())) {
             ContainerTypeEntity containerType =
                     containerTypeService.getContainerTypeByName(request.containerTypeName());
             containerEntity.setContainerType(containerType);
         }
 
         // Update location if provided
-        if (isValid(request.locationName()) && request.locationTypeEnum() != null) {
+        if (!validator.isNullOrEmpty(request.locationName()) && !validator.isNullOrEmpty(request.locationTypeEnum())) {
             containerEntity.setAttachedToInventoryEntity(
                     getContainerAttachedToInventory(request.locationName(), request.locationTypeEnum()));
         }
@@ -96,10 +103,6 @@ public class ContainerService {
         containerRepository.save(containerEntity);
     }
 
-    private boolean isValid(String value) {
-        return value != null && !value.isBlank();
-    }
-
     private InventoryEntity getAttachedInventory(String locationName, LocationTypeEnum locationType) {
         return locationType == LocationTypeEnum.CONTAINER
                 ? getContainerInventory(locationName)
@@ -109,7 +112,7 @@ public class ContainerService {
     private void validateSerialNumberUniqueness(final String serialNumber) {
         containerRepository.findBySerialNumber(serialNumber)
                 .ifPresent(container -> {
-                    throw new IllegalArgumentException("Container with serial number already exists: " + serialNumber);
+                    throw new IllegalArgumentException(CONTAINER_WITH_SERIAL_EXIST.formatted(serialNumber));
                 });
     }
 
@@ -139,12 +142,13 @@ public class ContainerService {
     private ContainerEntity getContainerEntityById(final Long id) {
         return containerRepository.findById(id)
                 .filter(containerEntity -> !containerEntity.getRemoved())
-                .orElseThrow(() -> new EntityNotFoundException("Container not found with id: " + id));
+                .orElseThrow(() -> new EntityNotFoundException(CONTAINER_NOT_FOUND_WITH_ID.formatted(id)));
     }
 
     private ContainerEntity getContainerEntityByName(final String serialNumber) {
         return containerRepository.findBySerialNumber(serialNumber)
                 .filter(containerEntity -> !containerEntity.getRemoved())
-                .orElseThrow(() -> new EntityNotFoundException("Container not found with serial number: " + serialNumber));
+                .orElseThrow(
+                        () -> new EntityNotFoundException(CONTAINER_NOT_FOUND_WITH_SERIAL_NUMBER.formatted(serialNumber)));
     }
 }
