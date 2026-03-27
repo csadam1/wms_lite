@@ -17,24 +17,28 @@ import java.util.List;
 @Service
 @RequiredArgsConstructor
 public class StorageLocationService {
-    private static final String SL_NOT_FOUND_WITH_NAME = "Storage Location not found with name: %s";
-    private static final String SL_NOT_FOUND_WITH_ID = "Storage Location not found with id: %s";
-    private static final String SL_WITH_NAME_EXIST = "Storage Location with name already exists: %s";
+    private static final String SL_NOT_FOUND_WITH_NAME_EXCEPTION = "Storage Location not found with name: %s";
+    private static final String SL_NOT_FOUND_WITH_ID_EXCEPTION = "Storage Location not found with id: %s";
+    private static final String SL_WITH_NAME_EXIST_EXCEPTION = "Storage Location with name already exists: %s";
 
     private final StorageLocationRepository storageLocationRepository;
     private final InventoryService inventoryService;
     private final Validator validator;
 
-    public InventoryEntity getStorageLocationInventoryByName(final String name) {
+    public StorageLocationEntity getStorageLocationByName(final String name) {
         return storageLocationRepository.findByName(name)
-                .orElseThrow(() -> new EntityNotFoundException(SL_NOT_FOUND_WITH_NAME.formatted(name)))
-                .getInventoryEntity();
+                .orElseThrow(() -> new EntityNotFoundException(SL_NOT_FOUND_WITH_NAME_EXCEPTION.formatted(name)));
+    }
+
+    public InventoryEntity getStorageLocationInventoryByName(final String name) {
+        return getStorageLocationByName(name).getInventoryEntity();
     }
 
     public StorageLocationResponse getStorageLocationById(final Long storageLocationId) {
         return storageLocationRepository.findById(storageLocationId)
                 .map(this::mapToResponse)
-                .orElseThrow(() -> new EntityNotFoundException(SL_NOT_FOUND_WITH_ID.formatted(storageLocationId)));
+                .orElseThrow(
+                        () -> new EntityNotFoundException(SL_NOT_FOUND_WITH_ID_EXCEPTION.formatted(storageLocationId)));
     }
 
     public List<StorageLocationResponse> getAllStorageLocations() {
@@ -46,10 +50,10 @@ public class StorageLocationService {
     @Transactional
     public StorageLocationResponse createStorageLocation(final StorageLocationRequest request) {
         validator.validateUniqueness(request.name(), storageLocationRepository::findByName,
-                SL_WITH_NAME_EXIST.formatted(request.name())
+                SL_WITH_NAME_EXIST_EXCEPTION.formatted(request.name())
         );
         StorageLocationEntity entity = mapToEntity(request);
-        entity.setInventoryEntity(inventoryService.getNewInventory());
+        entity.setInventoryEntity(inventoryService.createNewInventory());
         StorageLocationEntity saved = storageLocationRepository.save(entity);
         return mapToResponse(saved);
     }
@@ -59,11 +63,12 @@ public class StorageLocationService {
                                                          final StorageLocationRequest request)
     {
         StorageLocationEntity storageLocationEntity = storageLocationRepository.findById(storageLocationId)
-                .orElseThrow(() -> new EntityNotFoundException(SL_NOT_FOUND_WITH_ID.formatted(storageLocationId)));
+                .orElseThrow(
+                        () -> new EntityNotFoundException(SL_NOT_FOUND_WITH_ID_EXCEPTION.formatted(storageLocationId)));
 
         if (!validator.isNullOrEmpty(request.name())) {
             validator.validateUniqueness(request.name(), storageLocationRepository::findByName,
-                    SL_WITH_NAME_EXIST.formatted(request.name())
+                    SL_WITH_NAME_EXIST_EXCEPTION.formatted(request.name())
             );
             storageLocationEntity.setName(request.name());
         }
@@ -79,7 +84,7 @@ public class StorageLocationService {
     @Transactional
     public void deleteStorageLocationById(final Long storageLocationId) {
         if (!storageLocationRepository.existsById(storageLocationId)) {
-            throw new EntityNotFoundException(SL_NOT_FOUND_WITH_ID.formatted(storageLocationId));
+            throw new EntityNotFoundException(SL_NOT_FOUND_WITH_ID_EXCEPTION.formatted(storageLocationId));
         }
         storageLocationRepository.deleteById(storageLocationId);
     }

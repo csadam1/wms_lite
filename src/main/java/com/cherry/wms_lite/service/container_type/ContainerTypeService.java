@@ -10,23 +10,24 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
 import java.util.List;
 
 @Service
 @RequiredArgsConstructor
 public class ContainerTypeService {
-    private static final String CONTAINER_TYPE_NOT_FOUND_WITH_NAME = "Container type not found with name: %s";
-    private static final String CONTAINER_TYPE_NOT_FOUND_WITH_ID = "Container type not found with id: %s";
-    private static final String CONTAINER_TYPE_WITH_NAME_EXIST = "Container type with name already exists: %s";
+    private static final String CONTAINER_TYPE_NOT_FOUND_WITH_ID_EXCEPTION = "Container type not found with id: %s";
+    private static final String CONTAINER_TYPE_WITH_NAME_EXIST_EXCEPTION =
+            "Container type with name already exists: %s";
+    private static final String CONTAINERS_EXCEED_NEW_CAPACITY_EXCEPTION =
+            "Cannot update container type capacity. There are containers with occupied quantity exceeding new capacity. "
+                    + "Container Serial Numbers: %s";
 
     private final ContainerTypeRepository containerTypeRepository;
+    private final ContainerRepository containerRepository;
     private final Validator validator;
-
-    public ContainerTypeEntity getContainerTypeByName(final String containerTypeName) {
-        return containerTypeRepository.findByName(containerTypeName)
-                .orElseThrow(
-                        () -> new EntityNotFoundException(CONTAINER_TYPE_NOT_FOUND_WITH_NAME.formatted(containerTypeName)));
-    }
+    private final ContainerTypeValidationService containerTypeValidationService;
+    private final Utils utils;
 
     public List<ContainerTypeResponse> getAllContainerTypes() {
         return containerTypeRepository.findAll().stream()
@@ -38,13 +39,14 @@ public class ContainerTypeService {
         return containerTypeRepository.findById(containerTypeId)
                 .map(this::mapToResponse)
                 .orElseThrow(
-                        () -> new EntityNotFoundException(CONTAINER_TYPE_NOT_FOUND_WITH_ID.formatted(containerTypeId)));
+                        () -> new EntityNotFoundException(
+                                CONTAINER_TYPE_NOT_FOUND_WITH_ID_EXCEPTION.formatted(containerTypeId)));
     }
 
     @Transactional
     public ContainerTypeResponse createContainerType(final ContainerTypeRequest request) {
         validator.validateUniqueness(request.name(), containerTypeRepository::findByName,
-                CONTAINER_TYPE_WITH_NAME_EXIST.formatted(request.name())
+                CONTAINER_TYPE_WITH_NAME_EXIST_EXCEPTION.formatted(request.name())
         );
         ContainerTypeEntity entity = mapToEntity(request);
         ContainerTypeEntity saved = containerTypeRepository.save(entity);
@@ -55,22 +57,12 @@ public class ContainerTypeService {
     public ContainerTypeResponse updateContainerType(final Long containerTypeId, final ContainerTypeRequest request) {
         ContainerTypeEntity entity = containerTypeRepository.findById(containerTypeId)
                 .orElseThrow(
-                        () -> new EntityNotFoundException(CONTAINER_TYPE_NOT_FOUND_WITH_ID.formatted(containerTypeId)));
+                        () -> new EntityNotFoundException(
+                                CONTAINER_TYPE_NOT_FOUND_WITH_ID_EXCEPTION.formatted(containerTypeId)));
 
-        if (!validator.isNullOrEmpty(request.name())) {
-            validator.validateUniqueness(request.name(), containerTypeRepository::findByName,
-                    CONTAINER_TYPE_WITH_NAME_EXIST.formatted(request.name())
-            );
-            entity.setName(request.name());
-        }
-
-        if (!validator.isNullOrEmpty(request.description())) {
-            entity.setDescription(request.description());
-        }
-
-        if (validator.isPositiveBigDecimal(request.capacity())) {
-            entity.setCapacity(request.capacity());
-        }
+        updateNameIfProvided(request, entity);
+        updateDescriptionIfProvided(request, entity);
+        updateCapacityIfProvided(request, entity);
 
         ContainerTypeEntity updated = containerTypeRepository.save(entity);
         return mapToResponse(updated);
@@ -79,11 +71,49 @@ public class ContainerTypeService {
     @Transactional
     public void removeContainerTypeById(final Long containerTypeId) {
         if (!containerTypeRepository.existsById(containerTypeId)) {
-            throw new EntityNotFoundException(CONTAINER_TYPE_NOT_FOUND_WITH_ID.formatted(containerTypeId));
+            throw new EntityNotFoundException(CONTAINER_TYPE_NOT_FOUND_WITH_ID_EXCEPTION.formatted(containerTypeId));
         }
         containerTypeRepository.deleteById(containerTypeId);
     }
 
+    private void updateCapacityIfProvided(final ContainerTypeRequest request, final ContainerTypeEntity entity) {
+        if (validator.isPositiveBigDecimal(request.capacity())) {
+            List<String> invalidContainers = getInvalidContainerSerialNumbers(entity.getId(), request.capacity());
+            if (!invalidContainers.isEmpty()) {
+                throw new IllegalStateException(
+                        CONTAINERS_EXCEED_NEW_CAPACITY_EXCEPTION.formatted(utils.formatListToString(invalidContainers)));
+            }
+            entity.setCapacity(request.capacity());
+        }
+    }
+
+    private List<String> getInvalidContainerSerialNumbers(final Long containerTypeId, final BigDecimal newCapacity) {
+        return getAllContainersByContainerTypeId(containerTypeId).stream()
+                .map(containerEntity -> new ContainerValidationResult(containerEntity.getSerialNumber(),
+                        containerTypeValidationService.isContainerTypeChangeValid(containerEntity, newCapacity)))
+                .filter(containerValidationResult -> !containerValidationResult.isValid())
+                .map(ContainerValidationResult::containerSerialNumber)
+                .toList();
+    }
+
+    private List<ContainerEntity> getAllContainersByContainerTypeId(final Long containerTypeId) {
+        return containerRepository.findAllByContainerType_IdAndRemovedFalse(containerTypeId);
+    }
+
+    private void updateDescriptionIfProvided(final ContainerTypeRequest request, final ContainerTypeEntity entity) {
+        if (!validator.isNullOrEmpty(request.description())) {
+            entity.setDescription(request.description());
+        }
+    }
+
+    private void updateNameIfProvided(final ContainerTypeRequest request, final ContainerTypeEntity entity) {
+        if (!validator.isNullOrEmpty(request.name())) {
+            validator.validateUniqueness(request.name(), containerTypeRepository::findByName,
+                    CONTAINER_TYPE_WITH_NAME_EXIST_EXCEPTION.formatted(request.name())
+            );
+            entity.setName(request.name());
+        }
+    }
 
     private ContainerTypeResponse mapToResponse(final ContainerTypeEntity entity) {
         return new ContainerTypeResponse(

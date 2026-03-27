@@ -10,7 +10,7 @@ import org.springframework.stereotype.Service;
 public class InventoryService {
     private final InventoryRepository inventoryRepository;
 
-    public InventoryEntity getNewInventory() {
+    public InventoryEntity createNewInventory() {
         InventoryEntity inventoryEntity = new InventoryEntity();
         return inventoryRepository.save(inventoryEntity);
     }
