@@ -1,9 +1,13 @@
 package com.cherry.wms_lite.service.container_type;
 
+import com.cherry.wms_lite.common.Utils;
 import com.cherry.wms_lite.common.Validator;
+import com.cherry.wms_lite.model.dto.ContainerValidationResult;
+import com.cherry.wms_lite.model.entity.ContainerEntity;
 import com.cherry.wms_lite.model.entity.ContainerTypeEntity;
 import com.cherry.wms_lite.model.request.container_type.ContainerTypeRequest;
 import com.cherry.wms_lite.model.response.container_type.ContainerTypeResponse;
+import com.cherry.wms_lite.repository.container.ContainerRepository;
 import com.cherry.wms_lite.repository.container.ContainerTypeRepository;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
@@ -27,7 +31,6 @@ public class ContainerTypeService {
     private final ContainerRepository containerRepository;
     private final Validator validator;
     private final ContainerTypeValidationService containerTypeValidationService;
-    private final Utils utils;
 
     public List<ContainerTypeResponse> getAllContainerTypes() {
         return containerTypeRepository.findAll().stream()
@@ -81,7 +84,7 @@ public class ContainerTypeService {
             List<String> invalidContainers = getInvalidContainerSerialNumbers(entity.getId(), request.capacity());
             if (!invalidContainers.isEmpty()) {
                 throw new IllegalStateException(
-                        CONTAINERS_EXCEED_NEW_CAPACITY_EXCEPTION.formatted(utils.formatListToString(invalidContainers)));
+                        CONTAINERS_EXCEED_NEW_CAPACITY_EXCEPTION.formatted(Utils.formatListToString(invalidContainers)));
             }
             entity.setCapacity(request.capacity());
         }
