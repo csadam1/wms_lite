@@ -7,7 +7,7 @@ import jakarta.validation.constraints.NotNull;
 import java.math.BigDecimal;
 
 public record ContainerTypeRequest(
-        @NotBlank(message = "Serial number is required", groups = OnCreate.class)
+        @NotBlank(message = "Name is required", groups = OnCreate.class)
         String name,
         String description,
         @NotNull(message = "Capacity is required", groups = OnCreate.class)

@@ -66,16 +66,8 @@ public class StorageLocationService {
                 .orElseThrow(
                         () -> new EntityNotFoundException(SL_NOT_FOUND_WITH_ID_EXCEPTION.formatted(storageLocationId)));
 
-        if (!validator.isNullOrEmpty(request.name())) {
-            validator.validateUniqueness(request.name(), storageLocationRepository::findByName,
-                    SL_WITH_NAME_EXIST_EXCEPTION.formatted(request.name())
-            );
-            storageLocationEntity.setName(request.name());
-        }
-
-        if (!validator.isNullOrEmpty(request.description())) {
-            storageLocationEntity.setDescription(request.description());
-        }
+        updateNameIfProvided(request, storageLocationEntity);
+        updateDescriptionIfProvided(request, storageLocationEntity);
 
         StorageLocationEntity updated = storageLocationRepository.save(storageLocationEntity);
         return mapToResponse(updated);
@@ -89,6 +81,22 @@ public class StorageLocationService {
         storageLocationRepository.deleteById(storageLocationId);
     }
 
+    private void updateDescriptionIfProvided(final StorageLocationRequest request,
+                                             final StorageLocationEntity storageLocationEntity)
+    {
+        if (!validator.isNullOrEmpty(request.description())) {
+            storageLocationEntity.setDescription(request.description());
+        }
+    }
+
+    private void updateNameIfProvided(final StorageLocationRequest request, final StorageLocationEntity storageLocationEntity) {
+        if (!validator.isNullOrEmpty(request.name())) {
+            validator.validateUniqueness(request.name(), storageLocationRepository::findByName,
+                    SL_WITH_NAME_EXIST_EXCEPTION.formatted(request.name())
+            );
+            storageLocationEntity.setName(request.name());
+        }
+    }
 
     private StorageLocationEntity mapToEntity(final StorageLocationRequest request) {
         StorageLocationEntity entity = new StorageLocationEntity();

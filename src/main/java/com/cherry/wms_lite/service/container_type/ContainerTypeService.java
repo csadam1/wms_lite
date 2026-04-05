@@ -26,6 +26,8 @@ public class ContainerTypeService {
     private static final String CONTAINERS_EXCEED_NEW_CAPACITY_EXCEPTION =
             "Cannot update container type capacity. There are containers with occupied quantity exceeding new capacity. "
                     + "Container Serial Numbers: %s";
+    private static final String CONTAINERS_STILL_HAVE_THIS_CONTAINER_TYPE_EXCEPTION =
+            "Cannot delete container type with id %s because there are existing containers of this type";
 
     private final ContainerTypeRepository containerTypeRepository;
     private final ContainerRepository containerRepository;
@@ -72,22 +74,31 @@ public class ContainerTypeService {
     }
 
     @Transactional
-    public void removeContainerTypeById(final Long containerTypeId) {
+    public void deleteContainerTypeById(final Long containerTypeId) {
         if (!containerTypeRepository.existsById(containerTypeId)) {
             throw new EntityNotFoundException(CONTAINER_TYPE_NOT_FOUND_WITH_ID_EXCEPTION.formatted(containerTypeId));
         }
+        if (containerRepository.existsByContainerType_Id(containerTypeId)) {
+            throw new IllegalStateException(
+                    CONTAINERS_STILL_HAVE_THIS_CONTAINER_TYPE_EXCEPTION.formatted(containerTypeId));
+        }
+
         containerTypeRepository.deleteById(containerTypeId);
     }
 
     private void updateCapacityIfProvided(final ContainerTypeRequest request, final ContainerTypeEntity entity) {
-        if (validator.isPositiveBigDecimal(request.capacity())) {
+        if (!validator.isPositiveBigDecimal(request.capacity())) {
+            return;
+        }
+
+        if (request.capacity().compareTo(entity.getCapacity()) < 0) {
             List<String> invalidContainers = getInvalidContainerSerialNumbers(entity.getId(), request.capacity());
             if (!invalidContainers.isEmpty()) {
                 throw new IllegalStateException(
                         CONTAINERS_EXCEED_NEW_CAPACITY_EXCEPTION.formatted(Utils.formatListToString(invalidContainers)));
             }
-            entity.setCapacity(request.capacity());
         }
+        entity.setCapacity(request.capacity());
     }
 
     private List<String> getInvalidContainerSerialNumbers(final Long containerTypeId, final BigDecimal newCapacity) {

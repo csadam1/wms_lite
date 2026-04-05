@@ -45,7 +45,7 @@ public class ContainerTypeController {
 
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> removeContainerTypeById(@PathVariable(name = "id") final Long containerTypeId) {
-        containerTypeService.removeContainerTypeById(containerTypeId);
+        containerTypeService.deleteContainerTypeById(containerTypeId);
         return ResponseEntity.noContent().build();
     }
 }
