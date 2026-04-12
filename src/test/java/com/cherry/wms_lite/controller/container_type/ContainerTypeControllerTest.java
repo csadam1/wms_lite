@@ -41,9 +41,11 @@ class ContainerTypeControllerTest {
     private static final BigDecimal CAPACITY_2 = BigDecimal.valueOf(33.0);
     private static final BigDecimal UPDATED_CAPACITY = BigDecimal.valueOf(999.0);
     private static final String CONTAINER_TYPE_NOT_FOUND_WITH_ID = "Container type not found with id: 2";
-    private static final String CONTAINERS_STILL_HAVE_THIS_CONTAINER_TYPE_EXCEPTION = "Cannot delete container type with id 2 because there are existing containers of this type";
+    private static final String CONTAINERS_STILL_HAVE_THIS_CONTAINER_TYPE_EXCEPTION =
+            "Cannot delete container type with id 2 because there are existing containers of this type";
     private static final String NAME_IS_REQUIRED = "Name is required";
-    private static final String CONTAINER_TYPE_WITH_NAME_EXIST_EXCEPTION = "Container Type with name already exists: Container Type 1";
+    private static final String CONTAINER_TYPE_WITH_NAME_EXIST_EXCEPTION =
+            "Container Type with name already exists: Container Type 1";
     private static final String CONTAINERS_EXCEED_NEW_CAPACITY_EXCEPTION =
             "Cannot update container type capacity. There are containers with occupied quantity exceeding new capacity. "
                     + "Container Serial Numbers: CONT-001";
@@ -171,7 +173,8 @@ class ContainerTypeControllerTest {
     @Test
     void updateContainerType_returnsOk() throws Exception {
         // Arrange
-        ContainerTypeRequest request = new ContainerTypeRequest(UPDATED_CONTAINER_TYPE, UPDATED_DESCRIPTION, UPDATED_CAPACITY);
+        ContainerTypeRequest request =
+                new ContainerTypeRequest(UPDATED_CONTAINER_TYPE, UPDATED_DESCRIPTION, UPDATED_CAPACITY);
         ContainerTypeResponse response =
                 new ContainerTypeResponse(1L, UPDATED_CONTAINER_TYPE, UPDATED_DESCRIPTION, UPDATED_CAPACITY);
         when(containerTypeService.updateContainerType(eq(1L), any())).thenReturn(response);
@@ -250,7 +253,8 @@ class ContainerTypeControllerTest {
     @Test
     void removeContainerTypeById_containersHaveThisContainerType() throws Exception {
         // Arrange
-        IllegalStateException exception = new IllegalStateException(CONTAINERS_STILL_HAVE_THIS_CONTAINER_TYPE_EXCEPTION);
+        IllegalStateException exception =
+                new IllegalStateException(CONTAINERS_STILL_HAVE_THIS_CONTAINER_TYPE_EXCEPTION);
         doThrow(exception).when(containerTypeService).deleteContainerTypeById(2L);
 
         // Act and Assert

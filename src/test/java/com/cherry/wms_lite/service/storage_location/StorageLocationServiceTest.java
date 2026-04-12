@@ -56,7 +56,7 @@ class StorageLocationServiceTest {
     @Test
     void getStorageLocationByName_success() {
         // Arrange
-        StorageLocationEntity entity = createStorageLocationEntity(ID_1, STORAGE_LOCATION_1, DESCRIPTION_1);
+        StorageLocationEntity entity = new StorageLocationEntity(ID_1, STORAGE_LOCATION_1, DESCRIPTION_1, null);
         when(storageLocationRepository.findByName(STORAGE_LOCATION_1)).thenReturn(Optional.of(entity));
 
         // Act
@@ -87,7 +87,7 @@ class StorageLocationServiceTest {
     void getStorageLocationInventoryByName_success() {
         // Arrange
         InventoryEntity inventory = InventoryEntity.builder().id(ID_1).build();
-        StorageLocationEntity entity = createStorageLocationEntity(ID_1, STORAGE_LOCATION_1, DESCRIPTION_1);
+        StorageLocationEntity entity = new StorageLocationEntity(ID_1, STORAGE_LOCATION_1, DESCRIPTION_1, null);
         entity.setInventoryEntity(inventory);
         when(storageLocationRepository.findByName(STORAGE_LOCATION_1)).thenReturn(Optional.of(entity));
 
@@ -115,7 +115,7 @@ class StorageLocationServiceTest {
     @Test
     void getStorageLocationById_success() {
         // Arrange
-        StorageLocationEntity entity = createStorageLocationEntity(ID_1, STORAGE_LOCATION_1, DESCRIPTION_1);
+        StorageLocationEntity entity = new StorageLocationEntity(ID_1, STORAGE_LOCATION_1, DESCRIPTION_1, null);
         when(storageLocationRepository.findById(ID_1)).thenReturn(Optional.of(entity));
 
         // Act
@@ -145,8 +145,8 @@ class StorageLocationServiceTest {
     @Test
     void getAllStorageLocations_success() {
         // Arrange
-        StorageLocationEntity entity1 = createStorageLocationEntity(ID_1, STORAGE_LOCATION_1, DESCRIPTION_1);
-        StorageLocationEntity entity2 = createStorageLocationEntity(ID_2, STORAGE_LOCATION_2, DESCRIPTION_2);
+        StorageLocationEntity entity1 = new StorageLocationEntity(ID_1, STORAGE_LOCATION_1, DESCRIPTION_1, null);
+        StorageLocationEntity entity2 = new StorageLocationEntity(ID_2, STORAGE_LOCATION_2, DESCRIPTION_2, null);
         List<StorageLocationEntity> entities = List.of(entity1, entity2);
         when(storageLocationRepository.findAll()).thenReturn(entities);
 
@@ -182,7 +182,7 @@ class StorageLocationServiceTest {
         // Arrange
         StorageLocationRequest request = new StorageLocationRequest(STORAGE_LOCATION_1, DESCRIPTION_1);
         InventoryEntity inventory = InventoryEntity.builder().id(ID_1).build();
-        StorageLocationEntity savedEntity = createStorageLocationEntity(ID_1, STORAGE_LOCATION_1, DESCRIPTION_1);
+        StorageLocationEntity savedEntity = new StorageLocationEntity(ID_1, STORAGE_LOCATION_1, DESCRIPTION_1, null);
         savedEntity.setInventoryEntity(inventory);
 
         doNothing().when(validator).validateUniqueness(eq(STORAGE_LOCATION_1), any(), anyString());
@@ -224,8 +224,9 @@ class StorageLocationServiceTest {
     void updateStorageLocation_success() {
         // Arrange
         StorageLocationRequest request = new StorageLocationRequest(UPDATED_STORAGE_LOCATION, UPDATED_DESCRIPTION);
-        StorageLocationEntity existingEntity = createStorageLocationEntity(ID_1, STORAGE_LOCATION_1, DESCRIPTION_1);
-        StorageLocationEntity updatedEntity = createStorageLocationEntity(ID_1, UPDATED_STORAGE_LOCATION, UPDATED_DESCRIPTION);
+        StorageLocationEntity existingEntity = new StorageLocationEntity(ID_1, STORAGE_LOCATION_1, DESCRIPTION_1, null);
+        StorageLocationEntity updatedEntity =
+                new StorageLocationEntity(ID_1, UPDATED_STORAGE_LOCATION, UPDATED_DESCRIPTION, null);
 
         when(storageLocationRepository.findById(ID_1)).thenReturn(Optional.of(existingEntity));
         when(validator.isNullOrEmpty(UPDATED_STORAGE_LOCATION)).thenReturn(false);
@@ -249,8 +250,9 @@ class StorageLocationServiceTest {
     void updateStorageLocation_onlyName() {
         // Arrange
         StorageLocationRequest request = new StorageLocationRequest(UPDATED_STORAGE_LOCATION, null);
-        StorageLocationEntity existingEntity = createStorageLocationEntity(ID_1, STORAGE_LOCATION_1, DESCRIPTION_1);
-        StorageLocationEntity updatedEntity = createStorageLocationEntity(ID_1, UPDATED_STORAGE_LOCATION, DESCRIPTION_1);
+        StorageLocationEntity existingEntity = new StorageLocationEntity(ID_1, STORAGE_LOCATION_1, DESCRIPTION_1, null);
+        StorageLocationEntity updatedEntity =
+                new StorageLocationEntity(ID_1, UPDATED_STORAGE_LOCATION, DESCRIPTION_1, null);
 
         when(storageLocationRepository.findById(ID_1)).thenReturn(Optional.of(existingEntity));
         when(validator.isNullOrEmpty(UPDATED_STORAGE_LOCATION)).thenReturn(false);
@@ -273,8 +275,9 @@ class StorageLocationServiceTest {
     void updateStorageLocation_onlyDescription() {
         // Arrange
         StorageLocationRequest request = new StorageLocationRequest(null, UPDATED_DESCRIPTION);
-        StorageLocationEntity existingEntity = createStorageLocationEntity(ID_1, STORAGE_LOCATION_1, DESCRIPTION_1);
-        StorageLocationEntity updatedEntity = createStorageLocationEntity(ID_1, STORAGE_LOCATION_1, UPDATED_DESCRIPTION);
+        StorageLocationEntity existingEntity = new StorageLocationEntity(ID_1, STORAGE_LOCATION_1, DESCRIPTION_1, null);
+        StorageLocationEntity updatedEntity =
+                new StorageLocationEntity(ID_1, STORAGE_LOCATION_1, UPDATED_DESCRIPTION, null);
 
         when(storageLocationRepository.findById(ID_1)).thenReturn(Optional.of(existingEntity));
         when(validator.isNullOrEmpty(null)).thenReturn(true);
@@ -313,7 +316,7 @@ class StorageLocationServiceTest {
     void updateStorageLocation_nameAlreadyExists() {
         // Arrange
         StorageLocationRequest request = new StorageLocationRequest(STORAGE_LOCATION_1, UPDATED_DESCRIPTION);
-        StorageLocationEntity existingEntity = createStorageLocationEntity(ID_1, STORAGE_LOCATION_1, DESCRIPTION_1);
+        StorageLocationEntity existingEntity = new StorageLocationEntity(ID_1, STORAGE_LOCATION_1, DESCRIPTION_1, null);
         String errorMessage = SL_WITH_NAME_EXIST_EXCEPTION.formatted(STORAGE_LOCATION_1);
 
         when(storageLocationRepository.findById(ID_1)).thenReturn(Optional.of(existingEntity));
@@ -356,13 +359,5 @@ class StorageLocationServiceTest {
         assertEquals(SL_NOT_FOUND_WITH_ID_EXCEPTION.formatted(ID_1), exception.getMessage());
         verify(storageLocationRepository, times(1)).existsById(ID_1);
         verify(storageLocationRepository, never()).deleteById(ID_1);
-    }
-
-    private StorageLocationEntity createStorageLocationEntity(Long id, String name, String description) {
-        return StorageLocationEntity.builder()
-                .id(id)
-                .name(name)
-                .description(description)
-                .build();
     }
 }

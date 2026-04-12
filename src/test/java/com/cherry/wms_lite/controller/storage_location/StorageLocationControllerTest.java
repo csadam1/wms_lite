@@ -37,7 +37,8 @@ class StorageLocationControllerTest {
     private static final String UPDATED_DESCRIPTION = "Updated Description";
     private static final String STORAGE_LOCATION_NOT_FOUND_WITH_ID = "Storage Location not found with id: 2";
     private static final String NAME_IS_REQUIRED = "Name is required";
-    private static final String STORAGE_LOCATION_WITH_NAME_EXIST_EXCEPTION = "Storage Location with name already exists: Storage Location 1";
+    private static final String STORAGE_LOCATION_WITH_NAME_EXIST_EXCEPTION =
+            "Storage Location with name already exists: Storage Location 1";
     private static final String ERROR_MESSAGE_PATH = "$.message";
     private static final String ERROR_STATUS_PATH = "$.status";
     private static final String ERROR_STATUS_NAME_PATH = "$.error";
