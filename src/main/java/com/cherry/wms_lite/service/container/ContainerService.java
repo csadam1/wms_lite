@@ -223,8 +223,15 @@ public class ContainerService {
                 container.getContainerType().getName(),
                 container.getSerialNumber(),
                 container.getCreatedAt().truncatedTo(ChronoUnit.MILLIS),
-                container.getStatus()
+                container.getStatus(),
+                getLocationName(container)
         );
+    }
+
+    private String getLocationName(final ContainerEntity container) {
+        return container.getAttachedToInventoryEntity().getStorageLocation() != null
+                ? container.getAttachedToInventoryEntity().getStorageLocation().getName()
+                : container.getAttachedToInventoryEntity().getContainer().getSerialNumber();
     }
 
     private ContainerEntity getContainerEntityById(final Long id) {

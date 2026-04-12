@@ -8,5 +8,7 @@ public record ContainerResponse(Long id,
                                 String containerType,
                                 String containerSerialNumber,
                                 Instant createdAt,
-                                Enum<ContainerStatusEnum> status)
-{ }
+                                ContainerStatusEnum status,
+                                String locationName)
+{
+}

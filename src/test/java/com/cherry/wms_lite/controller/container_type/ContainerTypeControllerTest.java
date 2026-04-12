@@ -185,7 +185,7 @@ class ContainerTypeControllerTest {
     }
 
     @Test
-    void updateStorageLocation_nameAlreadyExist() throws Exception {
+    void updateContainerType_nameAlreadyExist() throws Exception {
         // Arrange
         ContainerTypeRequest request = new ContainerTypeRequest(CONTAINER_TYPE_1, DESCRIPTION_1, CAPACITY_1);
 
@@ -204,7 +204,7 @@ class ContainerTypeControllerTest {
     }
 
     @Test
-    void updateStorageLocation_capacityIsExceededByContainers() throws Exception {
+    void updateContainerType_capacityIsExceededByContainers() throws Exception {
         // Arrange
         ContainerTypeRequest request = new ContainerTypeRequest(CONTAINER_TYPE_1, DESCRIPTION_1, CAPACITY_1);
 
