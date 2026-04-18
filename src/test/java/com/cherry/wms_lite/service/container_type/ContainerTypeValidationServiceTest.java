@@ -148,11 +148,9 @@ class ContainerTypeValidationServiceTest {
                 ContainerEntity.builder().id(ID_3).containerType(containerType2).build());
     }
 
-
     private List<ItemEntity> get2ElemItemList() {
         return List.of(
                 ItemEntity.builder().id(ID_1).quantity(QUANTITY_1).build(),
                 ItemEntity.builder().id(ID_2).quantity(QUANTITY_2).build());
     }
-
 }
