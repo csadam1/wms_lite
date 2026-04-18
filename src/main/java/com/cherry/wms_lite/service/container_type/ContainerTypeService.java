@@ -91,12 +91,10 @@ public class ContainerTypeService {
             return;
         }
 
-        if (request.capacity().compareTo(entity.getCapacity()) < 0) {
-            List<String> invalidContainers = getInvalidContainerSerialNumbers(entity.getId(), request.capacity());
-            if (!invalidContainers.isEmpty()) {
-                throw new IllegalStateException(
-                        CONTAINERS_EXCEED_NEW_CAPACITY_EXCEPTION.formatted(Utils.formatListToString(invalidContainers)));
-            }
+        List<String> invalidContainers = getInvalidContainerSerialNumbers(entity.getId(), request.capacity());
+        if (!invalidContainers.isEmpty()) {
+            throw new IllegalStateException(
+                    CONTAINERS_EXCEED_NEW_CAPACITY_EXCEPTION.formatted(Utils.formatListToString(invalidContainers)));
         }
         entity.setCapacity(request.capacity());
     }

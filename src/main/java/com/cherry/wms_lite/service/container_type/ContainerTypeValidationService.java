@@ -28,8 +28,9 @@ public class ContainerTypeValidationService {
         }
 
         ContainerEntity parentContainer = container.getAttachedToInventoryEntity().getContainer();
+        BigDecimal parentContainerCapacity = parentContainer.getContainerType().getCapacity();
         return getCurrentQuantityForContainer(parentContainer, container.getContainerType(), newCapacity)
-                .compareTo(newCapacity) <= 0;
+                .compareTo(parentContainerCapacity) <= 0;
     }
 
     private BigDecimal getCurrentQuantityForContainer(final ContainerEntity container,
