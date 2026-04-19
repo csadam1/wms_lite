@@ -100,7 +100,10 @@ class ContainerTypeValidationServiceTest {
         // Arrange
         StorageLocationEntity storageLocation = StorageLocationEntity.builder().id(ID_1).build();
         InventoryEntity inventory = InventoryEntity.builder().id(ID_1).storageLocation(storageLocation).build();
-        ContainerEntity container = ContainerEntity.builder().id(ID_1).attachedToInventoryEntity(inventory).build();
+        ContainerTypeEntity containerType = ContainerTypeEntity.builder().id(ID_1).capacity(CAPACITY_1).build();
+        ContainerEntity container =
+                ContainerEntity.builder().id(ID_1).attachedToInventoryEntity(inventory).containerType(containerType)
+                        .build();
 
         // Act and Assert
         assertTrue(containerTypeValidationService.containerFitsIntoLocation(container, NEW_CAPACITY));
@@ -112,12 +115,15 @@ class ContainerTypeValidationServiceTest {
         // Arrange
         List<ItemEntity> items = get2ElemItemList();
         InventoryEntity parentInventory = InventoryEntity.builder().id(ID_1).items(items).build();
-        ContainerTypeEntity containerType = ContainerTypeEntity.builder().id(ID_1).capacity(CAPACITY_3).build();
+        ContainerTypeEntity containerType1 = ContainerTypeEntity.builder().id(ID_1).capacity(CAPACITY_3).build();
         ContainerEntity parentContainer =
-                ContainerEntity.builder().id(ID_1).inventoryEntity(parentInventory).containerType(containerType).build();
+                ContainerEntity.builder().id(ID_1).inventoryEntity(parentInventory).containerType(containerType1).build();
 
         InventoryEntity inventory = InventoryEntity.builder().id(ID_1).container(parentContainer).build();
-        ContainerEntity container = ContainerEntity.builder().id(ID_1).attachedToInventoryEntity(inventory).build();
+        ContainerTypeEntity containerType2 = ContainerTypeEntity.builder().id(ID_1).capacity(CAPACITY_1).build();
+        ContainerEntity container =
+                ContainerEntity.builder().id(ID_1).attachedToInventoryEntity(inventory).containerType(containerType2)
+                        .build();
 
         // Act and Assert
         assertTrue(containerTypeValidationService.containerFitsIntoLocation(container, NEW_CAPACITY));
@@ -129,15 +135,74 @@ class ContainerTypeValidationServiceTest {
         // Arrange
         List<ContainerEntity> containers = get2ElemContainerList();
         InventoryEntity parentInventory = InventoryEntity.builder().id(ID_1).containers(containers).build();
-        ContainerTypeEntity containerType3 = ContainerTypeEntity.builder().id(ID_3).capacity(CAPACITY_1).build();
+        ContainerTypeEntity containerType1 = ContainerTypeEntity.builder().id(ID_3).capacity(CAPACITY_1).build();
         ContainerEntity parentContainer =
-                ContainerEntity.builder().id(ID_1).inventoryEntity(parentInventory).containerType(containerType3).build();
+                ContainerEntity.builder().id(ID_1).inventoryEntity(parentInventory).containerType(containerType1).build();
 
         InventoryEntity inventory = InventoryEntity.builder().id(ID_1).container(parentContainer).build();
-        ContainerEntity container = ContainerEntity.builder().id(ID_1).attachedToInventoryEntity(inventory).build();
+        ContainerTypeEntity containerType2 = ContainerTypeEntity.builder().id(ID_1).capacity(CAPACITY_1).build();
+        ContainerEntity container =
+                ContainerEntity.builder().id(ID_1).attachedToInventoryEntity(inventory).containerType(containerType2)
+                        .build();
 
         // Act and Assert
         assertFalse(containerTypeValidationService.containerFitsIntoLocation(container, NEW_CAPACITY));
+    }
+
+    @Test
+    void isContainerTypeChangeValid_true() {
+        // Container has elements with 10 quantity in it. It is put into a parent container with a capacity of 100.
+        // The container's new capacity is updated to 10 which fits into the parent container and has enough space
+        // for its elements.
+        // Arrange
+        List<ItemEntity> parentItems = get2ElemItemList();
+        InventoryEntity parentInventory = InventoryEntity.builder().id(ID_1).items(parentItems).build();
+        ContainerTypeEntity containerType1 = ContainerTypeEntity.builder().id(ID_1).capacity(CAPACITY_3).build();
+        ContainerEntity parentContainer =
+                ContainerEntity.builder().id(ID_1).inventoryEntity(parentInventory).containerType(containerType1).build();
+        parentInventory.setContainer(parentContainer);
+
+        List<ContainerEntity> containers = get2ElemContainerList();
+        List<ItemEntity> items = List.of(ItemEntity.builder().id(ID_1).quantity(QUANTITY_1).build());
+        InventoryEntity inventory = InventoryEntity.builder().id(ID_1).items(items).containers(containers).build();
+        ContainerTypeEntity containerType2 = ContainerTypeEntity.builder().id(ID_1).capacity(CAPACITY_1).build();
+        ContainerEntity container = ContainerEntity.builder()
+                .id(ID_1)
+                .attachedToInventoryEntity(parentInventory)
+                .inventoryEntity(inventory)
+                .containerType(containerType2)
+                .build();
+
+        // Act and Assert
+        assertTrue(containerTypeValidationService.isContainerTypeChangeValid(container, NEW_CAPACITY));
+    }
+
+    @Test
+    void isContainerTypeChangeValid_false() {
+        // Container has elements with 10 quantity in it. It is put into a parent container with a capacity of 100.
+        // The container's new capacity is updated to 0. Even though the container will fit into the parent container
+        // it does not have enough space for its elements, so the change is not valid.
+        // Arrange
+        List<ItemEntity> parentItems = get2ElemItemList();
+        InventoryEntity parentInventory = InventoryEntity.builder().id(ID_1).items(parentItems).build();
+        ContainerTypeEntity containerType1 = ContainerTypeEntity.builder().id(ID_1).capacity(CAPACITY_3).build();
+        ContainerEntity parentContainer =
+                ContainerEntity.builder().id(ID_1).inventoryEntity(parentInventory).containerType(containerType1).build();
+        parentInventory.setContainer(parentContainer);
+
+        List<ContainerEntity> containers = get2ElemContainerList();
+        List<ItemEntity> items = List.of(ItemEntity.builder().id(ID_1).quantity(QUANTITY_1).build());
+        InventoryEntity inventory = InventoryEntity.builder().id(ID_1).items(items).containers(containers).build();
+        ContainerTypeEntity containerType2 = ContainerTypeEntity.builder().id(ID_1).capacity(CAPACITY_1).build();
+        ContainerEntity container = ContainerEntity.builder()
+                .id(ID_1)
+                .attachedToInventoryEntity(parentInventory)
+                .inventoryEntity(inventory)
+                .containerType(containerType2)
+                .build();
+
+        // Act and Assert
+        assertFalse(containerTypeValidationService.isContainerTypeChangeValid(container, NEW_CAPACITY_0));
     }
 
     private List<ContainerEntity> get2ElemContainerList() {
