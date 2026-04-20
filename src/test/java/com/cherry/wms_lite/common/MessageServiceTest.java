@@ -12,6 +12,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 class MessageServiceTest {
     private static final String EN_CONTAINER_TYPE_NOT_FOUND = "Container type not found with id: 42";
     private static final String HU_CONTAINER_TYPE_NOT_FOUND = "Tároló típus nem található az azonosítóval: 42";
+    private static final Long ID = 42L;
     private static final Locale HU_LOCALE = Locale.forLanguageTag("hu");
 
     private MessageService messageService;
@@ -29,7 +30,7 @@ class MessageServiceTest {
     void getMessage_containerTypeNotFoundWithId_english() {
         LocaleContextHolder.setLocale(Locale.ENGLISH);
 
-        String result = messageService.getMessage(ExceptionMessageKeys.CONTAINER_TYPE_NOT_FOUND_WITH_ID, 42L);
+        String result = messageService.getMessage(ExceptionMessageKeys.CONTAINER_TYPE_NOT_FOUND_WITH_ID, ID);
 
         assertEquals(EN_CONTAINER_TYPE_NOT_FOUND, result);
     }
@@ -38,8 +39,9 @@ class MessageServiceTest {
     void getMessage_containerTypeNotFoundWithId_hungarian() {
         LocaleContextHolder.setLocale(HU_LOCALE);
 
-        String result = messageService.getMessage(ExceptionMessageKeys.CONTAINER_TYPE_NOT_FOUND_WITH_ID, 42L);
+        String result = messageService.getMessage(ExceptionMessageKeys.CONTAINER_TYPE_NOT_FOUND_WITH_ID, ID);
 
         assertEquals(HU_CONTAINER_TYPE_NOT_FOUND, result);
     }
 }
+
