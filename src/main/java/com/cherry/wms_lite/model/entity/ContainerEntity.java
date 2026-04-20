@@ -2,10 +2,7 @@ package com.cherry.wms_lite.model.entity;
 
 import com.cherry.wms_lite.model.enumerate.ContainerStatusEnum;
 import jakarta.persistence.*;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.*;
 
 import java.time.Instant;
 
@@ -36,10 +33,14 @@ public class ContainerEntity {
     @Column(name = "removed", nullable = false)
     private Boolean removed;
 
+    @ToString.Exclude
+    @EqualsAndHashCode.Exclude
     @OneToOne(optional = false, orphanRemoval = true)
     @JoinColumn(name = "inventory_entity_id", nullable = false)
     private InventoryEntity inventoryEntity;
 
+    @ToString.Exclude
+    @EqualsAndHashCode.Exclude
     @ManyToOne(optional = false)
     @JoinColumn(name = "attached_to_inventory_entity_id", nullable = false)
     private InventoryEntity attachedToInventoryEntity;

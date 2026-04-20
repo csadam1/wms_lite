@@ -1,10 +1,7 @@
 package com.cherry.wms_lite.model.entity;
 
 import jakarta.persistence.*;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.*;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -28,10 +25,13 @@ public class InventoryEntity {
     @Builder.Default
     private List<ContainerEntity> containers = new ArrayList<>();
 
+    @ToString.Exclude
+    @EqualsAndHashCode.Exclude
     @OneToOne(mappedBy = "inventoryEntity")
     private StorageLocationEntity storageLocation;
 
+    @ToString.Exclude
+    @EqualsAndHashCode.Exclude
     @OneToOne(mappedBy = "inventoryEntity")
     private ContainerEntity container;
-
 }

@@ -33,7 +33,7 @@ public class ContainerService {
     private static final String CONTAINER_NOT_EMPTY_EXCEPTION =
             "Cannot remove container with non-empty inventory. Container id: %s";
     private static final String PARENT_CONTAINER_CAPACITY_EXCEEDED_EXCEPTION =
-            "Cannot create container. Parent container capacity exceeded. Parent container Serial Number: %s";
+            "Cannot create container. Parent container capacity exceeded. Container Serial Number: %s";
     private static final String CONTAINER_TYPE_NOT_FOUND_WITH_NAME_EXCEPTION = "Container type not found with name: %s";
 
     private final ContainerRepository containerRepository;
@@ -74,13 +74,6 @@ public class ContainerService {
         return mapToResponse(containerRepository.save(containerEntity));
     }
 
-    private ContainerTypeEntity getContainerTypeByName(final String name) {
-        return containerTypeRepository.findByName(name)
-                .orElseThrow(
-                        () -> new EntityNotFoundException(
-                                CONTAINER_TYPE_NOT_FOUND_WITH_NAME_EXCEPTION.formatted(name)));
-    }
-
     @Transactional
     public ContainerResponse updateContainer(final Long containerId, final ContainerRequest request) {
         ContainerEntity containerEntity = getContainerEntityById(containerId);
@@ -103,6 +96,13 @@ public class ContainerService {
         ContainerEntity containerEntity = getContainerEntityById(containerId);
         containerEntity.setRemoved(true);
         containerRepository.save(containerEntity);
+    }
+
+    private ContainerTypeEntity getContainerTypeByName(final String name) {
+        return containerTypeRepository.findByName(name)
+                .orElseThrow(
+                        () -> new EntityNotFoundException(
+                                CONTAINER_TYPE_NOT_FOUND_WITH_NAME_EXCEPTION.formatted(name)));
     }
 
     private void validateIsSerialNumberAlreadyExist(final String serialNumber) {
