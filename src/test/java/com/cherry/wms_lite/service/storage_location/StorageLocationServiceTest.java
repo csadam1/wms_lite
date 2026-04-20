@@ -1,5 +1,6 @@
 package com.cherry.wms_lite.service.storage_location;
 
+import com.cherry.wms_lite.common.MessageService;
 import com.cherry.wms_lite.common.Validator;
 import com.cherry.wms_lite.model.entity.InventoryEntity;
 import com.cherry.wms_lite.model.entity.StorageLocationEntity;
@@ -50,6 +51,9 @@ class StorageLocationServiceTest {
     @Mock
     private Validator validator;
 
+    @Mock
+    private MessageService messageService;
+
     @InjectMocks
     private StorageLocationService storageLocationService;
 
@@ -73,13 +77,16 @@ class StorageLocationServiceTest {
     @Test
     void getStorageLocationByName_notFound() {
         // Arrange
+        String message = SL_NOT_FOUND_WITH_NAME_EXCEPTION.formatted(STORAGE_LOCATION_1);
+
         when(storageLocationRepository.findByName(STORAGE_LOCATION_1)).thenReturn(Optional.empty());
+        when(messageService.getMessage(any(), any())).thenReturn(message);
 
         // Act and Assert
         EntityNotFoundException exception = assertThrows(EntityNotFoundException.class,
                 () -> storageLocationService.getStorageLocationByName(STORAGE_LOCATION_1));
 
-        assertEquals(SL_NOT_FOUND_WITH_NAME_EXCEPTION.formatted(STORAGE_LOCATION_1), exception.getMessage());
+        assertEquals(message, exception.getMessage());
         verify(storageLocationRepository, times(1)).findByName(STORAGE_LOCATION_1);
     }
 
@@ -132,13 +139,16 @@ class StorageLocationServiceTest {
     @Test
     void getStorageLocationById_notFound() {
         // Arrange
+        String message = SL_NOT_FOUND_WITH_ID_EXCEPTION.formatted(ID_1);
+
         when(storageLocationRepository.findById(ID_1)).thenReturn(Optional.empty());
+        when(messageService.getMessage(any(), any())).thenReturn(message);
 
         // Act and Assert
         EntityNotFoundException exception = assertThrows(EntityNotFoundException.class,
                 () -> storageLocationService.getStorageLocationById(ID_1));
 
-        assertEquals(SL_NOT_FOUND_WITH_ID_EXCEPTION.formatted(ID_1), exception.getMessage());
+        assertEquals(message, exception.getMessage());
         verify(storageLocationRepository, times(1)).findById(ID_1);
     }
 
@@ -184,10 +194,12 @@ class StorageLocationServiceTest {
         InventoryEntity inventory = InventoryEntity.builder().id(ID_1).build();
         StorageLocationEntity savedEntity = new StorageLocationEntity(ID_1, STORAGE_LOCATION_1, DESCRIPTION_1, null);
         savedEntity.setInventoryEntity(inventory);
+        String message = SL_WITH_NAME_EXIST_EXCEPTION.formatted(STORAGE_LOCATION_1);
 
         doNothing().when(validator).validateUniqueness(eq(STORAGE_LOCATION_1), any(), anyString());
         when(inventoryService.createNewInventory()).thenReturn(inventory);
         when(storageLocationRepository.save(any(StorageLocationEntity.class))).thenReturn(savedEntity);
+        when(messageService.getMessage(any(), any())).thenReturn(message);
 
         // Act
         StorageLocationResponse result = storageLocationService.createStorageLocation(request);
@@ -210,6 +222,7 @@ class StorageLocationServiceTest {
 
         doThrow(new IllegalArgumentException(errorMessage))
                 .when(validator).validateUniqueness(eq(STORAGE_LOCATION_1), any(), eq(errorMessage));
+        when(messageService.getMessage(any(), any())).thenReturn(errorMessage);
 
         // Act and Assert
         IllegalArgumentException exception = assertThrows(IllegalArgumentException.class,
@@ -227,12 +240,14 @@ class StorageLocationServiceTest {
         StorageLocationEntity existingEntity = new StorageLocationEntity(ID_1, STORAGE_LOCATION_1, DESCRIPTION_1, null);
         StorageLocationEntity updatedEntity =
                 new StorageLocationEntity(ID_1, UPDATED_STORAGE_LOCATION, UPDATED_DESCRIPTION, null);
+        String message = SL_WITH_NAME_EXIST_EXCEPTION.formatted(UPDATED_STORAGE_LOCATION);
 
         when(storageLocationRepository.findById(ID_1)).thenReturn(Optional.of(existingEntity));
         when(validator.isNullOrEmpty(UPDATED_STORAGE_LOCATION)).thenReturn(false);
         when(validator.isNullOrEmpty(UPDATED_DESCRIPTION)).thenReturn(false);
         doNothing().when(validator).validateUniqueness(eq(UPDATED_STORAGE_LOCATION), any(), anyString());
         when(storageLocationRepository.save(any(StorageLocationEntity.class))).thenReturn(updatedEntity);
+        when(messageService.getMessage(any(), any())).thenReturn(message);
 
         // Act
         StorageLocationResponse result = storageLocationService.updateStorageLocation(ID_1, request);
@@ -253,12 +268,14 @@ class StorageLocationServiceTest {
         StorageLocationEntity existingEntity = new StorageLocationEntity(ID_1, STORAGE_LOCATION_1, DESCRIPTION_1, null);
         StorageLocationEntity updatedEntity =
                 new StorageLocationEntity(ID_1, UPDATED_STORAGE_LOCATION, DESCRIPTION_1, null);
+        String message = SL_WITH_NAME_EXIST_EXCEPTION.formatted(UPDATED_STORAGE_LOCATION);
 
         when(storageLocationRepository.findById(ID_1)).thenReturn(Optional.of(existingEntity));
         when(validator.isNullOrEmpty(UPDATED_STORAGE_LOCATION)).thenReturn(false);
         when(validator.isNullOrEmpty(null)).thenReturn(true);
         doNothing().when(validator).validateUniqueness(eq(UPDATED_STORAGE_LOCATION), any(), anyString());
         when(storageLocationRepository.save(any(StorageLocationEntity.class))).thenReturn(updatedEntity);
+        when(messageService.getMessage(any(), any())).thenReturn(message);
 
         // Act
         StorageLocationResponse result = storageLocationService.updateStorageLocation(ID_1, request);
@@ -301,13 +318,16 @@ class StorageLocationServiceTest {
     void updateStorageLocation_notFound() {
         // Arrange
         StorageLocationRequest request = new StorageLocationRequest(UPDATED_STORAGE_LOCATION, UPDATED_DESCRIPTION);
+        String message = SL_NOT_FOUND_WITH_ID_EXCEPTION.formatted(ID_1);
+
         when(storageLocationRepository.findById(ID_1)).thenReturn(Optional.empty());
+        when(messageService.getMessage(any(), any())).thenReturn(message);
 
         // Act and Assert
         EntityNotFoundException exception = assertThrows(EntityNotFoundException.class,
                 () -> storageLocationService.updateStorageLocation(ID_1, request));
 
-        assertEquals(SL_NOT_FOUND_WITH_ID_EXCEPTION.formatted(ID_1), exception.getMessage());
+        assertEquals(message, exception.getMessage());
         verify(storageLocationRepository, times(1)).findById(ID_1);
         verify(storageLocationRepository, never()).save(any(StorageLocationEntity.class));
     }
@@ -323,6 +343,7 @@ class StorageLocationServiceTest {
         when(validator.isNullOrEmpty(STORAGE_LOCATION_1)).thenReturn(false);
         doThrow(new IllegalArgumentException(errorMessage))
                 .when(validator).validateUniqueness(eq(STORAGE_LOCATION_1), any(), eq(errorMessage));
+        when(messageService.getMessage(any(), any())).thenReturn(errorMessage);
 
         // Act & Assert
         IllegalArgumentException exception = assertThrows(IllegalArgumentException.class,
@@ -350,13 +371,16 @@ class StorageLocationServiceTest {
     @Test
     void deleteStorageLocationById_notFound() {
         // Arrange
+        String message = SL_NOT_FOUND_WITH_ID_EXCEPTION.formatted(ID_1);
+
         when(storageLocationRepository.existsById(ID_1)).thenReturn(false);
+        when(messageService.getMessage(any(), any())).thenReturn(message);
 
         // Act and Assert
         EntityNotFoundException exception = assertThrows(EntityNotFoundException.class,
                 () -> storageLocationService.deleteStorageLocationById(ID_1));
 
-        assertEquals(SL_NOT_FOUND_WITH_ID_EXCEPTION.formatted(ID_1), exception.getMessage());
+        assertEquals(message, exception.getMessage());
         verify(storageLocationRepository, times(1)).existsById(ID_1);
         verify(storageLocationRepository, never()).deleteById(ID_1);
     }

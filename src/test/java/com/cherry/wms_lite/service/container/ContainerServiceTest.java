@@ -1,5 +1,6 @@
 package com.cherry.wms_lite.service.container;
 
+import com.cherry.wms_lite.common.MessageService;
 import com.cherry.wms_lite.common.Validator;
 import com.cherry.wms_lite.model.entity.*;
 import com.cherry.wms_lite.model.enumerate.ContainerStatusEnum;
@@ -70,6 +71,8 @@ class ContainerServiceTest {
     private ContainerTypeValidationService containerTypeValidationService;
     @Mock
     private Validator validator;
+    @Mock
+    private MessageService messageService;
     @InjectMocks
     private ContainerService containerService;
 
@@ -136,13 +139,15 @@ class ContainerServiceTest {
     @Test
     void getContainerById_notFound_throwsEntityNotFoundException() {
         // Arrange
+        String message = CONTAINER_NOT_FOUND_WITH_ID_EXCEPTION.formatted(ID_1);
         when(containerRepository.findByIdAndRemovedFalse(ID_1)).thenReturn(Optional.empty());
+        when(messageService.getMessage(any(), any())).thenReturn(message);
 
         // Act and Assert
         EntityNotFoundException ex = assertThrows(EntityNotFoundException.class,
                 () -> containerService.getContainerById(ID_1));
 
-        assertEquals(CONTAINER_NOT_FOUND_WITH_ID_EXCEPTION.formatted(ID_1), ex.getMessage());
+        assertEquals(message, ex.getMessage());
     }
 
     @Test
@@ -226,6 +231,7 @@ class ContainerServiceTest {
 
         ContainerTypeEntity containerType = buildContainerType2();
         ContainerEntity parentContainer = buildParentContainer();
+        String message = PARENT_CONTAINER_CAPACITY_EXCEEDED_EXCEPTION.formatted(SERIAL_NUMBER_3);
 
         when(containerTypeRepository.findByName(CONTAINER_TYPE_NAME_2)).thenReturn(Optional.of(containerType));
         when(containerRepository.findBySerialNumberAndRemovedFalse(SERIAL_NUMBER_3)).thenReturn(
@@ -233,12 +239,13 @@ class ContainerServiceTest {
         when(containerTypeValidationService.containerContentIsLessOrEqualThanNewCapacity(parentContainer, CAPACITY_2))
                 .thenReturn(false);
         doNothing().when(validator).validateUniqueness(eq(SERIAL_NUMBER_1), any(), any());
+        when(messageService.getMessage(any(), any())).thenReturn(message);
 
         // Act and Assert
         IllegalStateException ex = assertThrows(IllegalStateException.class,
                 () -> containerService.createContainer(request));
 
-        assertEquals(PARENT_CONTAINER_CAPACITY_EXCEEDED_EXCEPTION.formatted(SERIAL_NUMBER_3), ex.getMessage());
+        assertEquals(message, ex.getMessage());
     }
 
     @Test
@@ -249,16 +256,18 @@ class ContainerServiceTest {
                         LocationTypeEnum.CONTAINER);
 
         ContainerTypeEntity containerType = buildContainerType1();
+        String message = CONTAINER_NOT_FOUND_WITH_SERIAL_NUMBER_EXCEPTION.formatted(SERIAL_NUMBER_3);
 
         doNothing().when(validator).validateUniqueness(eq(SERIAL_NUMBER_1), any(), any());
         when(containerTypeRepository.findByName(CONTAINER_TYPE_NAME_1)).thenReturn(Optional.of(containerType));
         when(containerRepository.findBySerialNumberAndRemovedFalse(SERIAL_NUMBER_3)).thenReturn(Optional.empty());
+        when(messageService.getMessage(any(), any())).thenReturn(message);
 
         // Act and Assert
         EntityNotFoundException ex = assertThrows(EntityNotFoundException.class,
                 () -> containerService.createContainer(request));
 
-        assertEquals(CONTAINER_NOT_FOUND_WITH_SERIAL_NUMBER_EXCEPTION.formatted(SERIAL_NUMBER_3), ex.getMessage());
+        assertEquals(message, ex.getMessage());
     }
 
     @Test
@@ -266,16 +275,18 @@ class ContainerServiceTest {
         ContainerRequest request = new ContainerRequest(
                 SERIAL_NUMBER_1, CONTAINER_TYPE_NAME_1, ContainerStatusEnum.OPEN, LOCATION_NAME,
                 LocationTypeEnum.STORAGE_LOCATION);
+        String message = CONTAINER_TYPE_NOT_FOUND_WITH_NAME_EXCEPTION.formatted(CONTAINER_TYPE_NAME_1);
 
         doNothing().when(validator).validateUniqueness(eq(SERIAL_NUMBER_1), any(), any());
         when(storageLocationService.getStorageLocationByName(LOCATION_NAME))
                 .thenReturn(buildStorageLocation());
         when(containerTypeRepository.findByName(CONTAINER_TYPE_NAME_1)).thenReturn(Optional.empty());
+        when(messageService.getMessage(any(), any())).thenReturn(message);
 
         EntityNotFoundException ex = assertThrows(EntityNotFoundException.class,
                 () -> containerService.createContainer(request));
 
-        assertEquals(CONTAINER_TYPE_NOT_FOUND_WITH_NAME_EXCEPTION.formatted(CONTAINER_TYPE_NAME_1), ex.getMessage());
+        assertEquals(message, ex.getMessage());
     }
 
     @Test
@@ -284,8 +295,9 @@ class ContainerServiceTest {
         ContainerRequest request = new ContainerRequest(
                 SERIAL_NUMBER_2, null, null, null, null);
 
+        String message = CONTAINER_WITH_SERIAL_EXIST_EXCEPTION.formatted(SERIAL_NUMBER_2);
         ContainerEntity container = buildContainer1WithEmptyInventory();
-        IllegalArgumentException exception = new IllegalArgumentException(CONTAINER_WITH_SERIAL_EXIST_EXCEPTION.formatted(SERIAL_NUMBER_2));
+        IllegalArgumentException exception = new IllegalArgumentException(message);
 
         when(containerRepository.findByIdAndRemovedFalse(ID_1)).thenReturn(Optional.of(container));
         when(validator.isNullOrEmpty(SERIAL_NUMBER_2)).thenReturn(false);
@@ -296,7 +308,7 @@ class ContainerServiceTest {
                 () -> containerService.updateContainer(ID_1, request));
 
         // Assert
-        assertEquals(CONTAINER_WITH_SERIAL_EXIST_EXCEPTION.formatted(SERIAL_NUMBER_2), ex.getMessage());
+        assertEquals(message, ex.getMessage());
     }
 
     @Test
@@ -352,18 +364,20 @@ class ContainerServiceTest {
 
         ContainerEntity container = buildContainer1WithEmptyInventory();
         ContainerTypeEntity newContainerType = buildContainerType2();
+        String message = PARENT_CONTAINER_CAPACITY_EXCEEDED_EXCEPTION.formatted(SERIAL_NUMBER_1);
 
         when(containerRepository.findByIdAndRemovedFalse(ID_1)).thenReturn(Optional.of(container));
         when(validator.isNullOrEmpty(null)).thenReturn(true);
         when(validator.isNullOrEmpty(CONTAINER_TYPE_NAME_2)).thenReturn(false);
         when(containerTypeRepository.findByName(CONTAINER_TYPE_NAME_2)).thenReturn(Optional.of(newContainerType));
         when(containerTypeValidationService.isContainerTypeChangeValid(container, CAPACITY_2)).thenReturn(false);
+        when(messageService.getMessage(any(), any())).thenReturn(message);
 
         // Act and Assert
         IllegalStateException ex = assertThrows(IllegalStateException.class,
                 () -> containerService.updateContainer(ID_1, request));
 
-        assertEquals(PARENT_CONTAINER_CAPACITY_EXCEEDED_EXCEPTION.formatted(SERIAL_NUMBER_1), ex.getMessage());
+        assertEquals(message, ex.getMessage());
     }
 
     @Test
@@ -405,7 +419,8 @@ class ContainerServiceTest {
         when(validator.isNullOrEmpty(null)).thenReturn(true);
         when(validator.isNullOrEmpty(SERIAL_NUMBER_2)).thenReturn(false);
         when(validator.isNullOrEmpty(LocationTypeEnum.CONTAINER)).thenReturn(false);
-        when(containerRepository.findBySerialNumberAndRemovedFalse(SERIAL_NUMBER_2)).thenReturn(Optional.of(parentContainer));
+        when(containerRepository.findBySerialNumberAndRemovedFalse(SERIAL_NUMBER_2)).thenReturn(
+                Optional.of(parentContainer));
         when(containerTypeValidationService.containerFitsIntoLocation(container, CAPACITY_1)).thenReturn(true);
         when(containerRepository.save(container)).thenReturn(container);
 
@@ -426,33 +441,37 @@ class ContainerServiceTest {
         parentContainer.getInventoryEntity().setContainer(parentContainer);
         ContainerEntity container = buildContainer1WithEmptyInventory();
         container.setAttachedToInventoryEntity(parentContainer.getInventoryEntity());
-
+        String message = PARENT_CONTAINER_CAPACITY_EXCEEDED_EXCEPTION.formatted(SERIAL_NUMBER_1);
         when(containerRepository.findByIdAndRemovedFalse(ID_1)).thenReturn(Optional.of(container));
         when(validator.isNullOrEmpty(null)).thenReturn(true);
         when(validator.isNullOrEmpty(SERIAL_NUMBER_2)).thenReturn(false);
         when(validator.isNullOrEmpty(LocationTypeEnum.CONTAINER)).thenReturn(false);
-        when(containerRepository.findBySerialNumberAndRemovedFalse(SERIAL_NUMBER_2)).thenReturn(Optional.of(parentContainer));
+        when(containerRepository.findBySerialNumberAndRemovedFalse(SERIAL_NUMBER_2)).thenReturn(
+                Optional.of(parentContainer));
         when(containerTypeValidationService.containerFitsIntoLocation(container, CAPACITY_1)).thenReturn(false);
+        when(messageService.getMessage(any(), any())).thenReturn(message);
 
         // Act and Assert
         IllegalStateException ex = assertThrows(IllegalStateException.class,
                 () -> containerService.updateContainer(ID_1, request));
 
-        assertEquals(PARENT_CONTAINER_CAPACITY_EXCEEDED_EXCEPTION.formatted(SERIAL_NUMBER_1), ex.getMessage());
+        assertEquals(message, ex.getMessage());
     }
 
     @Test
     void updateContainer_containerNotFound_throwsEntityNotFoundException() {
         // Arrange
         ContainerRequest request = new ContainerRequest(null, null, ContainerStatusEnum.OPEN, null, null);
+        String message = CONTAINER_NOT_FOUND_WITH_ID_EXCEPTION.formatted(ID_1);
 
         when(containerRepository.findByIdAndRemovedFalse(ID_1)).thenReturn(Optional.empty());
+        when(messageService.getMessage(any(), any())).thenReturn(message);
 
         // Act and Assert
         EntityNotFoundException ex = assertThrows(EntityNotFoundException.class,
                 () -> containerService.updateContainer(ID_1, request));
 
-        assertEquals(CONTAINER_NOT_FOUND_WITH_ID_EXCEPTION.formatted(ID_1), ex.getMessage());
+        assertEquals(message, ex.getMessage());
     }
 
     @Test
@@ -490,13 +509,16 @@ class ContainerServiceTest {
                 .removed(true)
                 .build();
 
+        String message = CONTAINER_NOT_EMPTY_EXCEPTION.formatted(ID_1);
+
         when(containerRepository.findByIdAndRemovedFalse(ID_1)).thenReturn(Optional.of(container));
+        when(messageService.getMessage(any(), any())).thenReturn(message);
 
         // Act and Assert
         IllegalStateException ex = assertThrows(IllegalStateException.class,
                 () -> containerService.removeContainerById(ID_1));
 
-        assertEquals(CONTAINER_NOT_EMPTY_EXCEPTION.formatted(ID_1), ex.getMessage());
+        assertEquals(message, ex.getMessage());
         verify(containerRepository, never()).save(any());
     }
 
@@ -517,26 +539,32 @@ class ContainerServiceTest {
                 .attachedToInventoryEntity(attachedInventory)
                 .build();
 
+        String message = CONTAINER_NOT_EMPTY_EXCEPTION.formatted(ID_1);
+
         when(containerRepository.findByIdAndRemovedFalse(ID_1)).thenReturn(Optional.of(container));
+        when(messageService.getMessage(any(), any())).thenReturn(message);
 
         // Act and Assert
         IllegalStateException ex = assertThrows(IllegalStateException.class,
                 () -> containerService.removeContainerById(ID_1));
 
-        assertEquals(CONTAINER_NOT_EMPTY_EXCEPTION.formatted(ID_1), ex.getMessage());
+        assertEquals(message, ex.getMessage());
     }
 
     @Test
     void removeContainerById_containerNotFound_throwsEntityNotFoundException() {
         // Arrange
+        String message = CONTAINER_NOT_FOUND_WITH_ID_EXCEPTION.formatted(ID_1);
+
         when(containerRepository.findByIdAndRemovedFalse(ID_1))
                 .thenReturn(Optional.empty());
+        when(messageService.getMessage(any(), any())).thenReturn(message);
 
         // Act and Assert
         EntityNotFoundException ex = assertThrows(EntityNotFoundException.class,
                 () -> containerService.removeContainerById(ID_1));
 
-        assertEquals(CONTAINER_NOT_FOUND_WITH_ID_EXCEPTION.formatted(ID_1), ex.getMessage());
+        assertEquals(message, ex.getMessage());
     }
 
     private ContainerTypeEntity buildContainerType1() {

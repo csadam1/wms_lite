@@ -70,7 +70,8 @@ public class ContainerTypeService {
     @Transactional
     public void deleteContainerTypeById(final Long containerTypeId) {
         if (!containerTypeRepository.existsById(containerTypeId)) {
-            throw new EntityNotFoundException(messageService.getMessage(ExceptionMessageKeys.CONTAINER_TYPE_NOT_FOUND_WITH_ID, containerTypeId));
+            throw new EntityNotFoundException(
+                    messageService.getMessage(ExceptionMessageKeys.CONTAINER_TYPE_NOT_FOUND_WITH_ID, containerTypeId));
         }
         if (containerRepository.existsByContainerType_Id(containerTypeId)) {
             throw new IllegalStateException(
@@ -88,7 +89,8 @@ public class ContainerTypeService {
         List<String> invalidContainers = getInvalidContainerSerialNumbers(entity.getId(), request.capacity());
         if (!invalidContainers.isEmpty()) {
             throw new IllegalStateException(
-                    messageService.getMessage(ExceptionMessageKeys.CONTAINERS_EXCEED_NEW_CAPACITY, Utils.formatListToString(invalidContainers)));
+                    messageService.getMessage(ExceptionMessageKeys.CONTAINERS_EXCEED_NEW_CAPACITY,
+                            Utils.formatListToString(invalidContainers)));
         }
         entity.setCapacity(request.capacity());
     }

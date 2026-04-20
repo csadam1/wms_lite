@@ -26,7 +26,8 @@ public class StorageLocationService {
 
     public StorageLocationEntity getStorageLocationByName(final String name) {
         return storageLocationRepository.findByName(name)
-                .orElseThrow(() -> new EntityNotFoundException(messageService.getMessage(ExceptionMessageKeys.STORAGE_LOCATION_NOT_FOUND_WITH_NAME, name)));
+                .orElseThrow(() -> new EntityNotFoundException(
+                        messageService.getMessage(ExceptionMessageKeys.STORAGE_LOCATION_NOT_FOUND_WITH_NAME, name)));
     }
 
     public InventoryEntity getStorageLocationInventoryByName(final String name) {
@@ -37,7 +38,9 @@ public class StorageLocationService {
         return storageLocationRepository.findById(storageLocationId)
                 .map(this::mapToResponse)
                 .orElseThrow(
-                        () -> new EntityNotFoundException(messageService.getMessage(ExceptionMessageKeys.STORAGE_LOCATION_NOT_FOUND_WITH_ID, storageLocationId)));
+                        () -> new EntityNotFoundException(
+                                messageService.getMessage(ExceptionMessageKeys.STORAGE_LOCATION_NOT_FOUND_WITH_ID,
+                                        storageLocationId)));
     }
 
     public List<StorageLocationResponse> getAllStorageLocations() {
@@ -63,7 +66,9 @@ public class StorageLocationService {
     {
         StorageLocationEntity storageLocationEntity = storageLocationRepository.findById(storageLocationId)
                 .orElseThrow(
-                        () -> new EntityNotFoundException(messageService.getMessage(ExceptionMessageKeys.STORAGE_LOCATION_NOT_FOUND_WITH_ID, storageLocationId)));
+                        () -> new EntityNotFoundException(
+                                messageService.getMessage(ExceptionMessageKeys.STORAGE_LOCATION_NOT_FOUND_WITH_ID,
+                                        storageLocationId)));
 
         updateNameIfProvided(request, storageLocationEntity);
         updateDescriptionIfProvided(request, storageLocationEntity);
@@ -75,7 +80,8 @@ public class StorageLocationService {
     @Transactional
     public void deleteStorageLocationById(final Long storageLocationId) {
         if (!storageLocationRepository.existsById(storageLocationId)) {
-            throw new EntityNotFoundException(messageService.getMessage(ExceptionMessageKeys.STORAGE_LOCATION_NOT_FOUND_WITH_ID, storageLocationId));
+            throw new EntityNotFoundException(
+                    messageService.getMessage(ExceptionMessageKeys.STORAGE_LOCATION_NOT_FOUND_WITH_ID, storageLocationId));
         }
         storageLocationRepository.deleteById(storageLocationId);
     }
@@ -88,7 +94,9 @@ public class StorageLocationService {
         }
     }
 
-    private void updateNameIfProvided(final StorageLocationRequest request, final StorageLocationEntity storageLocationEntity) {
+    private void updateNameIfProvided(final StorageLocationRequest request,
+                                      final StorageLocationEntity storageLocationEntity)
+    {
         if (!validator.isNullOrEmpty(request.name())) {
             validator.validateUniqueness(request.name(), storageLocationRepository::findByName,
                     messageService.getMessage(ExceptionMessageKeys.STORAGE_LOCATION_NAME_EXISTS, request.name())

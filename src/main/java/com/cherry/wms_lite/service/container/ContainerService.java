@@ -82,7 +82,8 @@ public class ContainerService {
     @Transactional
     public void removeContainerById(final Long containerId) {
         if (!isContainerInventoryEmpty(containerId)) {
-            throw new IllegalStateException(messageService.getMessage(ExceptionMessageKeys.CONTAINER_NOT_EMPTY, containerId));
+            throw new IllegalStateException(
+                    messageService.getMessage(ExceptionMessageKeys.CONTAINER_NOT_EMPTY, containerId));
         }
 
         ContainerEntity containerEntity = getContainerEntityById(containerId);
@@ -126,7 +127,8 @@ public class ContainerService {
                 containerTypeValidationService.isContainerTypeChangeValid(containerEntity, containerType.getCapacity());
         if (!isValid) {
             throw new IllegalStateException(
-                    messageService.getMessage(ExceptionMessageKeys.PARENT_CONTAINER_CAPACITY_EXCEEDED, containerEntity.getSerialNumber()));
+                    messageService.getMessage(ExceptionMessageKeys.PARENT_CONTAINER_CAPACITY_EXCEEDED,
+                            containerEntity.getSerialNumber()));
         }
     }
 
@@ -151,7 +153,8 @@ public class ContainerService {
         boolean isValid = containerTypeValidationService.containerFitsIntoLocation(containerEntity, capacity);
         if (!isValid) {
             throw new IllegalStateException(
-                    messageService.getMessage(ExceptionMessageKeys.PARENT_CONTAINER_CAPACITY_EXCEEDED, containerEntity.getSerialNumber()));
+                    messageService.getMessage(ExceptionMessageKeys.PARENT_CONTAINER_CAPACITY_EXCEEDED,
+                            containerEntity.getSerialNumber()));
         }
     }
 
@@ -173,7 +176,8 @@ public class ContainerService {
 
             if (isContainerOverloaded) {
                 throw new IllegalStateException(
-                        messageService.getMessage(ExceptionMessageKeys.PARENT_CONTAINER_CAPACITY_EXCEEDED, parentContainer.getSerialNumber()));
+                        messageService.getMessage(ExceptionMessageKeys.PARENT_CONTAINER_CAPACITY_EXCEEDED,
+                                parentContainer.getSerialNumber()));
             }
         }
     }
@@ -228,7 +232,8 @@ public class ContainerService {
 
     private ContainerEntity getContainerEntityById(final Long id) {
         return containerRepository.findByIdAndRemovedFalse(id)
-                .orElseThrow(() -> new EntityNotFoundException(messageService.getMessage(ExceptionMessageKeys.CONTAINER_NOT_FOUND_WITH_ID, id)));
+                .orElseThrow(() -> new EntityNotFoundException(
+                        messageService.getMessage(ExceptionMessageKeys.CONTAINER_NOT_FOUND_WITH_ID, id)));
     }
 
     private ContainerEntity getContainerEntityByName(final String serialNumber) {

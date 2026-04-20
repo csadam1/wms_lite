@@ -1,5 +1,6 @@
 package com.cherry.wms_lite.service.container_type;
 
+import com.cherry.wms_lite.common.MessageService;
 import com.cherry.wms_lite.common.Utils;
 import com.cherry.wms_lite.common.Validator;
 import com.cherry.wms_lite.model.entity.ContainerEntity;
@@ -65,6 +66,9 @@ class ContainerTypeServiceTest {
     @Mock
     private ContainerTypeValidationService containerTypeValidationService;
 
+    @Mock
+    private MessageService messageService;
+
     @InjectMocks
     private ContainerTypeService containerTypeService;
 
@@ -123,13 +127,16 @@ class ContainerTypeServiceTest {
     @Test
     void getContainerTypeById_notFound() {
         // Arrange
+        String message = CONTAINER_TYPE_NOT_FOUND_WITH_ID_EXCEPTION.formatted(ID_1);
+
         when(containerTypeRepository.findById(ID_1)).thenReturn(Optional.empty());
+        when(messageService.getMessage(any(), any())).thenReturn(message);
 
         // Act and Assert
         EntityNotFoundException exception = assertThrows(EntityNotFoundException.class,
                 () -> containerTypeService.getContainerTypeById(ID_1));
 
-        assertEquals(CONTAINER_TYPE_NOT_FOUND_WITH_ID_EXCEPTION.formatted(ID_1), exception.getMessage());
+        assertEquals(message, exception.getMessage());
         verify(containerTypeRepository, times(1)).findById(ID_1);
     }
 
@@ -138,9 +145,11 @@ class ContainerTypeServiceTest {
         // Arrange
         ContainerTypeRequest request = new ContainerTypeRequest(CONTAINER_TYPE_1, DESCRIPTION_1, CAPACITY_1);
         ContainerTypeEntity savedEntity = new ContainerTypeEntity(ID_1, CONTAINER_TYPE_1, DESCRIPTION_1, CAPACITY_1);
+        String message = CONTAINER_TYPE_WITH_NAME_EXIST_EXCEPTION.formatted(CONTAINER_TYPE_1);
 
         doNothing().when(validator).validateUniqueness(eq(CONTAINER_TYPE_1), any(), anyString());
         when(containerTypeRepository.save(any(ContainerTypeEntity.class))).thenReturn(savedEntity);
+        when(messageService.getMessage(any(), any())).thenReturn(message);
 
         // Act
         ContainerTypeResponse result = containerTypeService.createContainerType(request);
@@ -162,6 +171,7 @@ class ContainerTypeServiceTest {
 
         doThrow(new IllegalArgumentException(errorMessage))
                 .when(validator).validateUniqueness(eq(CONTAINER_TYPE_1), any(), eq(errorMessage));
+        when(messageService.getMessage(any(), any())).thenReturn(errorMessage);
 
         // Act and Assert
         IllegalArgumentException exception = assertThrows(IllegalArgumentException.class,
@@ -179,12 +189,14 @@ class ContainerTypeServiceTest {
         ContainerTypeEntity existingEntity = new ContainerTypeEntity(ID_1, CONTAINER_TYPE_1, DESCRIPTION_1, CAPACITY_1);
         ContainerTypeEntity updatedEntity =
                 new ContainerTypeEntity(ID_1, UPDATED_CONTAINER_TYPE, UPDATED_DESCRIPTION, UPDATED_BIGGER_CAPACITY);
+        String message = CONTAINER_TYPE_WITH_NAME_EXIST_EXCEPTION.formatted(CONTAINER_TYPE_1);
 
         when(containerTypeRepository.findById(ID_1)).thenReturn(Optional.of(existingEntity));
         when(validator.isNullOrEmpty(UPDATED_CONTAINER_TYPE)).thenReturn(false);
         when(validator.isNullOrEmpty(UPDATED_DESCRIPTION)).thenReturn(false);
         doNothing().when(validator).validateUniqueness(eq(UPDATED_CONTAINER_TYPE), any(), anyString());
         when(containerTypeRepository.save(any(ContainerTypeEntity.class))).thenReturn(updatedEntity);
+        when(messageService.getMessage(any(), any())).thenReturn(message);
 
         // Act
         ContainerTypeResponse result = containerTypeService.updateContainerType(ID_1, request);
@@ -205,12 +217,14 @@ class ContainerTypeServiceTest {
         ContainerTypeEntity existingEntity = new ContainerTypeEntity(ID_1, CONTAINER_TYPE_1, DESCRIPTION_1, CAPACITY_1);
         ContainerTypeEntity updatedEntity =
                 new ContainerTypeEntity(ID_1, UPDATED_CONTAINER_TYPE, DESCRIPTION_1, CAPACITY_1);
+        String message = CONTAINER_TYPE_WITH_NAME_EXIST_EXCEPTION.formatted(CONTAINER_TYPE_1);
 
         when(containerTypeRepository.findById(ID_1)).thenReturn(Optional.of(existingEntity));
         when(validator.isNullOrEmpty(UPDATED_CONTAINER_TYPE)).thenReturn(false);
         when(validator.isNullOrEmpty(null)).thenReturn(true);
         doNothing().when(validator).validateUniqueness(eq(UPDATED_CONTAINER_TYPE), any(), anyString());
         when(containerTypeRepository.save(any(ContainerTypeEntity.class))).thenReturn(updatedEntity);
+        when(messageService.getMessage(any(), any())).thenReturn(message);
 
         // Act
         ContainerTypeResponse result = containerTypeService.updateContainerType(ID_1, request);
@@ -305,13 +319,16 @@ class ContainerTypeServiceTest {
     void updateContainerType_notFound() {
         ContainerTypeRequest request =
                 new ContainerTypeRequest(UPDATED_CONTAINER_TYPE, UPDATED_DESCRIPTION, UPDATED_BIGGER_CAPACITY);
+        String message = CONTAINER_TYPE_NOT_FOUND_WITH_ID_EXCEPTION.formatted(ID_1);
+
         when(containerTypeRepository.findById(ID_1)).thenReturn(Optional.empty());
+        when(messageService.getMessage(any(), any())).thenReturn(message);
 
         // Act and Assert
         EntityNotFoundException exception = assertThrows(EntityNotFoundException.class,
                 () -> containerTypeService.updateContainerType(ID_1, request));
 
-        assertEquals(CONTAINER_TYPE_NOT_FOUND_WITH_ID_EXCEPTION.formatted(ID_1), exception.getMessage());
+        assertEquals(message, exception.getMessage());
         verify(containerTypeRepository, times(1)).findById(ID_1);
         verify(containerTypeRepository, never()).save(any(ContainerTypeEntity.class));
     }
@@ -324,6 +341,8 @@ class ContainerTypeServiceTest {
         ContainerEntity entity1 = getContainerEntity(ID_1, CONTAINER_SERIAL_NUMBER_1);
         ContainerEntity entity2 = getContainerEntity(ID_2, CONTAINER_SERIAL_NUMBER_2);
         List<ContainerEntity> containerEntities = List.of(entity1, entity2);
+        String message = CONTAINERS_EXCEED_NEW_CAPACITY_EXCEPTION.formatted(
+                Utils.formatListToString(List.of(CONTAINER_SERIAL_NUMBER_1, CONTAINER_SERIAL_NUMBER_2)));
 
         when(containerTypeRepository.findById(ID_1)).thenReturn(Optional.of(existingEntity));
         when(validator.isPositiveBigDecimal(UPDATED_SMALLER_CAPACITY)).thenReturn(true);
@@ -331,14 +350,13 @@ class ContainerTypeServiceTest {
         when(containerRepository.findAllByContainerType_IdAndRemovedFalse(ID_1)).thenReturn(containerEntities);
         when(containerTypeValidationService.isContainerTypeChangeValid(any(), eq(UPDATED_SMALLER_CAPACITY))).thenReturn(
                 false);
+        when(messageService.getMessage(any(), any())).thenReturn(message);
 
         // Act and Assert
         IllegalStateException exception = assertThrows(IllegalStateException.class,
                 () -> containerTypeService.updateContainerType(ID_1, request));
 
-        assertEquals(CONTAINERS_EXCEED_NEW_CAPACITY_EXCEPTION.formatted(
-                        Utils.formatListToString(List.of(CONTAINER_SERIAL_NUMBER_1, CONTAINER_SERIAL_NUMBER_2))),
-                exception.getMessage());
+        assertEquals(message, exception.getMessage());
         verify(containerTypeRepository, times(1)).findById(ID_1);
         verify(containerTypeRepository, never()).save(any(ContainerTypeEntity.class));
     }
@@ -362,14 +380,18 @@ class ContainerTypeServiceTest {
     @Test
     void deleteContainerTypeById_notFound() {
         // Arrange
+        String message = CONTAINER_TYPE_NOT_FOUND_WITH_ID_EXCEPTION.formatted(ID_1);
+
         when(containerTypeRepository.existsById(ID_1)).thenReturn(false);
+        when(messageService.getMessage(any(), any())).thenReturn(message);
+
 
         // Act and Assert
         EntityNotFoundException exception = assertThrows(EntityNotFoundException.class,
                 () -> containerTypeService.deleteContainerTypeById(ID_1));
 
         // Assert
-        assertEquals(CONTAINER_TYPE_NOT_FOUND_WITH_ID_EXCEPTION.formatted(ID_1), exception.getMessage());
+        assertEquals(message, exception.getMessage());
         verify(containerTypeRepository, times(1)).existsById(ID_1);
         verify(containerRepository, never()).existsByContainerType_Id(ID_1);
         verify(containerTypeRepository, never()).deleteById(ID_1);
@@ -378,15 +400,18 @@ class ContainerTypeServiceTest {
     @Test
     void deleteContainerTypeById_existContainerWithContainerType() {
         // Arrange
+        String message = CONTAINERS_STILL_HAVE_THIS_CONTAINER_TYPE_EXCEPTION.formatted(ID_1);
+
         when(containerTypeRepository.existsById(ID_1)).thenReturn(true);
         when(containerRepository.existsByContainerType_Id(ID_1)).thenReturn(true);
+        when(messageService.getMessage(any(), any())).thenReturn(message);
 
         // Act and Assert
         IllegalStateException exception = assertThrows(IllegalStateException.class,
                 () -> containerTypeService.deleteContainerTypeById(ID_1));
 
         // Assert
-        assertEquals(CONTAINERS_STILL_HAVE_THIS_CONTAINER_TYPE_EXCEPTION.formatted(ID_1), exception.getMessage());
+        assertEquals(message, exception.getMessage());
         verify(containerTypeRepository, times(1)).existsById(ID_1);
         verify(containerRepository, times(1)).existsByContainerType_Id(ID_1);
         verify(containerTypeRepository, never()).deleteById(ID_1);
