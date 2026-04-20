@@ -1,5 +1,7 @@
 package com.cherry.wms_lite.service.storage_location;
 
+import com.cherry.wms_lite.common.ExceptionMessageKeys;
+import com.cherry.wms_lite.common.MessageService;
 import com.cherry.wms_lite.common.Validator;
 import com.cherry.wms_lite.model.entity.InventoryEntity;
 import com.cherry.wms_lite.model.entity.StorageLocationEntity;
@@ -17,17 +19,14 @@ import java.util.List;
 @Service
 @RequiredArgsConstructor
 public class StorageLocationService {
-    private static final String SL_NOT_FOUND_WITH_NAME_EXCEPTION = "Storage Location not found with name: %s";
-    private static final String SL_NOT_FOUND_WITH_ID_EXCEPTION = "Storage Location not found with id: %s";
-    private static final String SL_WITH_NAME_EXIST_EXCEPTION = "Storage Location with name already exists: %s";
-
     private final StorageLocationRepository storageLocationRepository;
     private final InventoryService inventoryService;
     private final Validator validator;
+    private final MessageService messageService;
 
     public StorageLocationEntity getStorageLocationByName(final String name) {
         return storageLocationRepository.findByName(name)
-                .orElseThrow(() -> new EntityNotFoundException(SL_NOT_FOUND_WITH_NAME_EXCEPTION.formatted(name)));
+                .orElseThrow(() -> new EntityNotFoundException(messageService.getMessage(ExceptionMessageKeys.STORAGE_LOCATION_NOT_FOUND_WITH_NAME, name)));
     }
 
     public InventoryEntity getStorageLocationInventoryByName(final String name) {
@@ -38,7 +37,7 @@ public class StorageLocationService {
         return storageLocationRepository.findById(storageLocationId)
                 .map(this::mapToResponse)
                 .orElseThrow(
-                        () -> new EntityNotFoundException(SL_NOT_FOUND_WITH_ID_EXCEPTION.formatted(storageLocationId)));
+                        () -> new EntityNotFoundException(messageService.getMessage(ExceptionMessageKeys.STORAGE_LOCATION_NOT_FOUND_WITH_ID, storageLocationId)));
     }
 
     public List<StorageLocationResponse> getAllStorageLocations() {
@@ -50,7 +49,7 @@ public class StorageLocationService {
     @Transactional
     public StorageLocationResponse createStorageLocation(final StorageLocationRequest request) {
         validator.validateUniqueness(request.name(), storageLocationRepository::findByName,
-                SL_WITH_NAME_EXIST_EXCEPTION.formatted(request.name())
+                messageService.getMessage(ExceptionMessageKeys.STORAGE_LOCATION_NAME_EXISTS, request.name())
         );
         StorageLocationEntity entity = mapToEntity(request);
         entity.setInventoryEntity(inventoryService.createNewInventory());
@@ -64,7 +63,7 @@ public class StorageLocationService {
     {
         StorageLocationEntity storageLocationEntity = storageLocationRepository.findById(storageLocationId)
                 .orElseThrow(
-                        () -> new EntityNotFoundException(SL_NOT_FOUND_WITH_ID_EXCEPTION.formatted(storageLocationId)));
+                        () -> new EntityNotFoundException(messageService.getMessage(ExceptionMessageKeys.STORAGE_LOCATION_NOT_FOUND_WITH_ID, storageLocationId)));
 
         updateNameIfProvided(request, storageLocationEntity);
         updateDescriptionIfProvided(request, storageLocationEntity);
@@ -76,7 +75,7 @@ public class StorageLocationService {
     @Transactional
     public void deleteStorageLocationById(final Long storageLocationId) {
         if (!storageLocationRepository.existsById(storageLocationId)) {
-            throw new EntityNotFoundException(SL_NOT_FOUND_WITH_ID_EXCEPTION.formatted(storageLocationId));
+            throw new EntityNotFoundException(messageService.getMessage(ExceptionMessageKeys.STORAGE_LOCATION_NOT_FOUND_WITH_ID, storageLocationId));
         }
         storageLocationRepository.deleteById(storageLocationId);
     }
@@ -92,7 +91,7 @@ public class StorageLocationService {
     private void updateNameIfProvided(final StorageLocationRequest request, final StorageLocationEntity storageLocationEntity) {
         if (!validator.isNullOrEmpty(request.name())) {
             validator.validateUniqueness(request.name(), storageLocationRepository::findByName,
-                    SL_WITH_NAME_EXIST_EXCEPTION.formatted(request.name())
+                    messageService.getMessage(ExceptionMessageKeys.STORAGE_LOCATION_NAME_EXISTS, request.name())
             );
             storageLocationEntity.setName(request.name());
         }

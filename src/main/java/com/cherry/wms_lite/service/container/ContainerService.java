@@ -1,5 +1,7 @@
 package com.cherry.wms_lite.service.container;
 
+import com.cherry.wms_lite.common.ExceptionMessageKeys;
+import com.cherry.wms_lite.common.MessageService;
 import com.cherry.wms_lite.common.Validator;
 import com.cherry.wms_lite.model.entity.ContainerEntity;
 import com.cherry.wms_lite.model.entity.ContainerTypeEntity;
@@ -25,23 +27,13 @@ import java.util.List;
 @Service
 @RequiredArgsConstructor
 public class ContainerService {
-    private static final String CONTAINER_WITH_SERIAL_EXIST_EXCEPTION =
-            "Container with serial number already exists: %s";
-    private static final String CONTAINER_NOT_FOUND_WITH_ID_EXCEPTION = "Container not found with id: %s";
-    private static final String CONTAINER_NOT_FOUND_WITH_SERIAL_NUMBER_EXCEPTION =
-            "Container not found with serial number: %s";
-    private static final String CONTAINER_NOT_EMPTY_EXCEPTION =
-            "Cannot remove container with non-empty inventory. Container id: %s";
-    private static final String PARENT_CONTAINER_CAPACITY_EXCEEDED_EXCEPTION =
-            "Cannot create container. Parent container capacity exceeded. Container Serial Number: %s";
-    private static final String CONTAINER_TYPE_NOT_FOUND_WITH_NAME_EXCEPTION = "Container type not found with name: %s";
-
     private final ContainerRepository containerRepository;
     private final ContainerTypeRepository containerTypeRepository;
     private final StorageLocationService storageLocationService;
     private final InventoryService inventoryService;
     private final ContainerTypeValidationService containerTypeValidationService;
     private final Validator validator;
+    private final MessageService messageService;
 
     public List<ContainerResponse> getAllContainers() {
         return containerRepository.findAllByRemovedFalse().stream()
@@ -90,7 +82,7 @@ public class ContainerService {
     @Transactional
     public void removeContainerById(final Long containerId) {
         if (!isContainerInventoryEmpty(containerId)) {
-            throw new IllegalStateException(CONTAINER_NOT_EMPTY_EXCEPTION.formatted(containerId));
+            throw new IllegalStateException(messageService.getMessage(ExceptionMessageKeys.CONTAINER_NOT_EMPTY, containerId));
         }
 
         ContainerEntity containerEntity = getContainerEntityById(containerId);
@@ -102,13 +94,13 @@ public class ContainerService {
         return containerTypeRepository.findByName(name)
                 .orElseThrow(
                         () -> new EntityNotFoundException(
-                                CONTAINER_TYPE_NOT_FOUND_WITH_NAME_EXCEPTION.formatted(name)));
+                                messageService.getMessage(ExceptionMessageKeys.CONTAINER_TYPE_NOT_FOUND_WITH_NAME, name)));
     }
 
     private void validateIsSerialNumberAlreadyExist(final String serialNumber) {
         if (!validator.isNullOrEmpty(serialNumber)) {
             validator.validateUniqueness(serialNumber, containerRepository::findBySerialNumberAndRemovedFalse,
-                    CONTAINER_WITH_SERIAL_EXIST_EXCEPTION.formatted(serialNumber));
+                    messageService.getMessage(ExceptionMessageKeys.CONTAINER_SERIAL_EXISTS, serialNumber));
         }
     }
 
@@ -134,7 +126,7 @@ public class ContainerService {
                 containerTypeValidationService.isContainerTypeChangeValid(containerEntity, containerType.getCapacity());
         if (!isValid) {
             throw new IllegalStateException(
-                    PARENT_CONTAINER_CAPACITY_EXCEEDED_EXCEPTION.formatted(containerEntity.getSerialNumber()));
+                    messageService.getMessage(ExceptionMessageKeys.PARENT_CONTAINER_CAPACITY_EXCEEDED, containerEntity.getSerialNumber()));
         }
     }
 
@@ -159,14 +151,14 @@ public class ContainerService {
         boolean isValid = containerTypeValidationService.containerFitsIntoLocation(containerEntity, capacity);
         if (!isValid) {
             throw new IllegalStateException(
-                    PARENT_CONTAINER_CAPACITY_EXCEEDED_EXCEPTION.formatted(containerEntity.getSerialNumber()));
+                    messageService.getMessage(ExceptionMessageKeys.PARENT_CONTAINER_CAPACITY_EXCEEDED, containerEntity.getSerialNumber()));
         }
     }
 
     private void validateCreateContainerRequest(final ContainerRequest request) {
         //Is Container already exist
         validator.validateUniqueness(request.serialNumber(), containerRepository::findBySerialNumberAndRemovedFalse,
-                CONTAINER_WITH_SERIAL_EXIST_EXCEPTION.formatted(request.serialNumber())
+                messageService.getMessage(ExceptionMessageKeys.CONTAINER_SERIAL_EXISTS, request.serialNumber())
         );
 
         //Does target location exist
@@ -181,7 +173,7 @@ public class ContainerService {
 
             if (isContainerOverloaded) {
                 throw new IllegalStateException(
-                        PARENT_CONTAINER_CAPACITY_EXCEEDED_EXCEPTION.formatted(parentContainer.getSerialNumber()));
+                        messageService.getMessage(ExceptionMessageKeys.PARENT_CONTAINER_CAPACITY_EXCEEDED, parentContainer.getSerialNumber()));
             }
         }
     }
@@ -236,13 +228,13 @@ public class ContainerService {
 
     private ContainerEntity getContainerEntityById(final Long id) {
         return containerRepository.findByIdAndRemovedFalse(id)
-                .orElseThrow(() -> new EntityNotFoundException(CONTAINER_NOT_FOUND_WITH_ID_EXCEPTION.formatted(id)));
+                .orElseThrow(() -> new EntityNotFoundException(messageService.getMessage(ExceptionMessageKeys.CONTAINER_NOT_FOUND_WITH_ID, id)));
     }
 
     private ContainerEntity getContainerEntityByName(final String serialNumber) {
         return containerRepository.findBySerialNumberAndRemovedFalse(serialNumber)
                 .orElseThrow(
                         () -> new EntityNotFoundException(
-                                CONTAINER_NOT_FOUND_WITH_SERIAL_NUMBER_EXCEPTION.formatted(serialNumber)));
+                                messageService.getMessage(ExceptionMessageKeys.CONTAINER_NOT_FOUND_WITH_SERIAL, serialNumber)));
     }
 }

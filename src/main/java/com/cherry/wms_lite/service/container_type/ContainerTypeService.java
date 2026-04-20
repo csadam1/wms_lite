@@ -1,5 +1,7 @@
 package com.cherry.wms_lite.service.container_type;
 
+import com.cherry.wms_lite.common.ExceptionMessageKeys;
+import com.cherry.wms_lite.common.MessageService;
 import com.cherry.wms_lite.common.Utils;
 import com.cherry.wms_lite.common.Validator;
 import com.cherry.wms_lite.model.dto.ContainerValidationResult;
@@ -20,19 +22,11 @@ import java.util.List;
 @Service
 @RequiredArgsConstructor
 public class ContainerTypeService {
-    private static final String CONTAINER_TYPE_NOT_FOUND_WITH_ID_EXCEPTION = "Container type not found with id: %s";
-    private static final String CONTAINER_TYPE_WITH_NAME_EXIST_EXCEPTION =
-            "Container type with name already exists: %s";
-    private static final String CONTAINERS_EXCEED_NEW_CAPACITY_EXCEPTION =
-            "Cannot update container type capacity. There are containers with occupied quantity exceeding new capacity. "
-                    + "Container Serial Numbers: %s";
-    private static final String CONTAINERS_STILL_HAVE_THIS_CONTAINER_TYPE_EXCEPTION =
-            "Cannot delete container type with id %s because there are existing containers of this type";
-
     private final ContainerTypeRepository containerTypeRepository;
     private final ContainerRepository containerRepository;
     private final Validator validator;
     private final ContainerTypeValidationService containerTypeValidationService;
+    private final MessageService messageService;
 
     public List<ContainerTypeResponse> getAllContainerTypes() {
         return containerTypeRepository.findAll().stream()
@@ -45,13 +39,13 @@ public class ContainerTypeService {
                 .map(this::mapToResponse)
                 .orElseThrow(
                         () -> new EntityNotFoundException(
-                                CONTAINER_TYPE_NOT_FOUND_WITH_ID_EXCEPTION.formatted(containerTypeId)));
+                                messageService.getMessage(ExceptionMessageKeys.CONTAINER_TYPE_NOT_FOUND_WITH_ID, containerTypeId)));
     }
 
     @Transactional
     public ContainerTypeResponse createContainerType(final ContainerTypeRequest request) {
         validator.validateUniqueness(request.name(), containerTypeRepository::findByName,
-                CONTAINER_TYPE_WITH_NAME_EXIST_EXCEPTION.formatted(request.name())
+                messageService.getMessage(ExceptionMessageKeys.CONTAINER_TYPE_NAME_EXISTS, request.name())
         );
         ContainerTypeEntity entity = mapToEntity(request);
         ContainerTypeEntity saved = containerTypeRepository.save(entity);
@@ -63,7 +57,7 @@ public class ContainerTypeService {
         ContainerTypeEntity entity = containerTypeRepository.findById(containerTypeId)
                 .orElseThrow(
                         () -> new EntityNotFoundException(
-                                CONTAINER_TYPE_NOT_FOUND_WITH_ID_EXCEPTION.formatted(containerTypeId)));
+                                messageService.getMessage(ExceptionMessageKeys.CONTAINER_TYPE_NOT_FOUND_WITH_ID, containerTypeId)));
 
         updateNameIfProvided(request, entity);
         updateDescriptionIfProvided(request, entity);
@@ -76,11 +70,11 @@ public class ContainerTypeService {
     @Transactional
     public void deleteContainerTypeById(final Long containerTypeId) {
         if (!containerTypeRepository.existsById(containerTypeId)) {
-            throw new EntityNotFoundException(CONTAINER_TYPE_NOT_FOUND_WITH_ID_EXCEPTION.formatted(containerTypeId));
+            throw new EntityNotFoundException(messageService.getMessage(ExceptionMessageKeys.CONTAINER_TYPE_NOT_FOUND_WITH_ID, containerTypeId));
         }
         if (containerRepository.existsByContainerType_Id(containerTypeId)) {
             throw new IllegalStateException(
-                    CONTAINERS_STILL_HAVE_THIS_CONTAINER_TYPE_EXCEPTION.formatted(containerTypeId));
+                    messageService.getMessage(ExceptionMessageKeys.CONTAINER_TYPE_CONTAINERS_STILL_EXIST, containerTypeId));
         }
 
         containerTypeRepository.deleteById(containerTypeId);
@@ -94,7 +88,7 @@ public class ContainerTypeService {
         List<String> invalidContainers = getInvalidContainerSerialNumbers(entity.getId(), request.capacity());
         if (!invalidContainers.isEmpty()) {
             throw new IllegalStateException(
-                    CONTAINERS_EXCEED_NEW_CAPACITY_EXCEPTION.formatted(Utils.formatListToString(invalidContainers)));
+                    messageService.getMessage(ExceptionMessageKeys.CONTAINERS_EXCEED_NEW_CAPACITY, Utils.formatListToString(invalidContainers)));
         }
         entity.setCapacity(request.capacity());
     }
@@ -121,7 +115,7 @@ public class ContainerTypeService {
     private void updateNameIfProvided(final ContainerTypeRequest request, final ContainerTypeEntity entity) {
         if (!validator.isNullOrEmpty(request.name())) {
             validator.validateUniqueness(request.name(), containerTypeRepository::findByName,
-                    CONTAINER_TYPE_WITH_NAME_EXIST_EXCEPTION.formatted(request.name())
+                    messageService.getMessage(ExceptionMessageKeys.CONTAINER_TYPE_NAME_EXISTS, request.name())
             );
             entity.setName(request.name());
         }
