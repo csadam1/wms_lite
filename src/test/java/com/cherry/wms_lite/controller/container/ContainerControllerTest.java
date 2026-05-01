@@ -1,6 +1,7 @@
 package com.cherry.wms_lite.controller.container;
 
 import com.cherry.wms_lite.WmsLiteApplication;
+import com.cherry.wms_lite.config.SecurityConfig;
 import com.cherry.wms_lite.model.enumerate.ContainerStatusEnum;
 import com.cherry.wms_lite.model.enumerate.LocationTypeEnum;
 import com.cherry.wms_lite.model.request.container.ContainerRequest;
@@ -11,8 +12,11 @@ import jakarta.persistence.EntityNotFoundException;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
+import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
+import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.ContextConfiguration;
+import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
@@ -30,6 +34,13 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 @WebMvcTest(ContainerController.class)
 @ContextConfiguration(classes = WmsLiteApplication.class)
+@Import(SecurityConfig.class)
+@TestPropertySource(properties = {
+        "app.security.admin.username=admin",
+        "app.security.admin.password=admin",
+        "app.security.admin.role=ADMIN"
+})
+@WithMockUser
 class ContainerControllerTest {
     private static final String CONTAINER_TYPE_1 = "Container Type 1";
     private static final String CONTAINER_TYPE_2 = "Container Type 2";
