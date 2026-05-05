@@ -225,9 +225,15 @@ public class ContainerService {
     }
 
     private String getLocationName(final ContainerEntity container) {
-        return container.getAttachedToInventoryEntity().getStorageLocation() != null
-                ? container.getAttachedToInventoryEntity().getStorageLocation().getName()
-                : container.getAttachedToInventoryEntity().getContainer().getSerialNumber();
+        try {
+            return container.getAttachedToInventoryEntity().getStorageLocation() != null
+                    ? container.getAttachedToInventoryEntity().getStorageLocation().getName()
+                    : container.getAttachedToInventoryEntity().getContainer().getSerialNumber();
+        } catch (NullPointerException e) {
+            throw new IllegalStateException(
+                    messageService.getMessage(ExceptionMessageKeys.CONTAINER_DOES_NOT_HAVE_VALID_STORAGE,
+                            container.getSerialNumber()));
+        }
     }
 
     private ContainerEntity getContainerEntityById(final Long id) {
