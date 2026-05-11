@@ -7,6 +7,7 @@ import lombok.*;
 import java.time.Instant;
 
 @Entity
+@Table(name = "Container")
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
