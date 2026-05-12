@@ -19,4 +19,6 @@ public interface ContainerRepository extends JpaRepository<ContainerEntity, Long
     Optional<ContainerEntity> findBySerialNumberAndRemovedFalse(@NonNull String serialNumber);
 
     boolean existsByContainerType_Id(@NonNull Long id);
+
+    boolean existsByRemovedFalseAndAttachedToInventoryEntity_StorageLocation_Id(@NonNull Long id);
 }

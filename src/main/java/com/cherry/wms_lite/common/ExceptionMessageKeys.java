@@ -6,7 +6,6 @@ public final class ExceptionMessageKeys {
     // Container Type
     public static final String CONTAINER_TYPE_NOT_FOUND_WITH_ID = "exception.container_type.not_found_with_id";
     public static final String CONTAINER_TYPE_NAME_EXISTS = "exception.container_type.name_exists";
-    public static final String CONTAINERS_EXCEED_NEW_CAPACITY = "exception.container_type.containers_exceed_capacity";
     public static final String CONTAINER_TYPE_CONTAINERS_STILL_EXIST = "exception.container_type.containers_still_exist";
 
     // Container
@@ -23,6 +22,7 @@ public final class ExceptionMessageKeys {
     public static final String STORAGE_LOCATION_NOT_FOUND_WITH_NAME = "exception.storage_location.not_found_with_name";
     public static final String STORAGE_LOCATION_NOT_FOUND_WITH_ID = "exception.storage_location.not_found_with_id";
     public static final String STORAGE_LOCATION_NAME_EXISTS = "exception.storage_location.name_exists";
+    public static final String STORAGE_LOCATION_WITH_ID_NOT_EMPTY = "exception.storage_location.not_empty_with_id";
 
     // Item
     public static final String ITEM_NOT_FOUND_WITH_ID = "exception.item.not_found_with_id";

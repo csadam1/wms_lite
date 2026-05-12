@@ -9,6 +9,7 @@ import com.cherry.wms_lite.model.entity.StorageLocationEntity;
 import com.cherry.wms_lite.model.request.storage_location.StorageLocationRequest;
 import com.cherry.wms_lite.model.response.storage_location.StorageLocationResponse;
 import com.cherry.wms_lite.repository.StorageLocationRepository;
+import com.cherry.wms_lite.repository.container.ContainerRepository;
 import com.cherry.wms_lite.service.inventory.InventoryService;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
@@ -21,6 +22,7 @@ import java.util.List;
 @RequiredArgsConstructor
 public class StorageLocationService {
     private final StorageLocationRepository storageLocationRepository;
+    private final ContainerRepository containerRepository;
     private final InventoryService inventoryService;
     private final Validator validator;
     private final MessageService messageService;
@@ -81,6 +83,12 @@ public class StorageLocationService {
             throw new EntityNotFoundException(
                     messageService.getMessage(ExceptionMessageKeys.STORAGE_LOCATION_NOT_FOUND_WITH_ID, storageLocationId));
         }
+        if (containerRepository.existsByRemovedFalseAndAttachedToInventoryEntity_StorageLocation_Id(storageLocationId))
+        {
+            throw new IllegalStateException(
+                    messageService.getMessage(ExceptionMessageKeys.STORAGE_LOCATION_WITH_ID_NOT_EMPTY, storageLocationId));
+        }
+
         storageLocationRepository.deleteById(storageLocationId);
     }
 
