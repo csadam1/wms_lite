@@ -4,6 +4,7 @@ import com.cherry.wms_lite.common.ExceptionMessageKeys;
 import com.cherry.wms_lite.common.MessageService;
 import com.cherry.wms_lite.common.Utils;
 import com.cherry.wms_lite.common.Validator;
+import com.cherry.wms_lite.mapper.container_type.ContainerTypeMapper;
 import com.cherry.wms_lite.model.dto.ContainerValidationResult;
 import com.cherry.wms_lite.model.entity.ContainerEntity;
 import com.cherry.wms_lite.model.entity.ContainerTypeEntity;
@@ -27,16 +28,17 @@ public class ContainerTypeService {
     private final Validator validator;
     private final ContainerTypeValidationService containerTypeValidationService;
     private final MessageService messageService;
+    private final ContainerTypeMapper containerTypeMapper;
 
     public List<ContainerTypeResponse> getAllContainerTypes() {
         return containerTypeRepository.findAll().stream()
-                .map(this::mapToResponse)
+                .map(containerTypeMapper::toResponse)
                 .toList();
     }
 
     public ContainerTypeResponse getContainerTypeById(final Long containerTypeId) {
         return containerTypeRepository.findById(containerTypeId)
-                .map(this::mapToResponse)
+                .map(containerTypeMapper::toResponse)
                 .orElseThrow(
                         () -> new EntityNotFoundException(
                                 messageService.getMessage(ExceptionMessageKeys.CONTAINER_TYPE_NOT_FOUND_WITH_ID, containerTypeId)));
@@ -47,9 +49,8 @@ public class ContainerTypeService {
         validator.validateUniqueness(request.name(), containerTypeRepository::findByName,
                 messageService.getMessage(ExceptionMessageKeys.CONTAINER_TYPE_NAME_EXISTS, request.name())
         );
-        ContainerTypeEntity entity = mapToEntity(request);
-        ContainerTypeEntity saved = containerTypeRepository.save(entity);
-        return mapToResponse(saved);
+        ContainerTypeEntity containerType = containerTypeMapper.toEntity(request);
+        return containerTypeMapper.toResponse(containerTypeRepository.save(containerType));
     }
 
     @Transactional
@@ -63,8 +64,7 @@ public class ContainerTypeService {
         updateDescriptionIfProvided(request, entity);
         updateCapacityIfProvided(request, entity);
 
-        ContainerTypeEntity updated = containerTypeRepository.save(entity);
-        return mapToResponse(updated);
+        return containerTypeMapper.toResponse(containerTypeRepository.save(entity));
     }
 
     @Transactional
@@ -121,22 +121,5 @@ public class ContainerTypeService {
             );
             entity.setName(request.name());
         }
-    }
-
-    private ContainerTypeResponse mapToResponse(final ContainerTypeEntity entity) {
-        return new ContainerTypeResponse(
-                entity.getId(),
-                entity.getName(),
-                entity.getDescription(),
-                entity.getCapacity()
-        );
-    }
-
-    private ContainerTypeEntity mapToEntity(final ContainerTypeRequest request) {
-        ContainerTypeEntity entity = new ContainerTypeEntity();
-        entity.setName(request.name());
-        entity.setDescription(request.description());
-        entity.setCapacity(request.capacity());
-        return entity;
     }
 }

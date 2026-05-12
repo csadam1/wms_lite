@@ -3,6 +3,7 @@ package com.cherry.wms_lite.service.storage_location;
 import com.cherry.wms_lite.common.ExceptionMessageKeys;
 import com.cherry.wms_lite.common.MessageService;
 import com.cherry.wms_lite.common.Validator;
+import com.cherry.wms_lite.mapper.storage_location.StorageLocationMapper;
 import com.cherry.wms_lite.model.entity.InventoryEntity;
 import com.cherry.wms_lite.model.entity.StorageLocationEntity;
 import com.cherry.wms_lite.model.request.storage_location.StorageLocationRequest;
@@ -23,6 +24,7 @@ public class StorageLocationService {
     private final InventoryService inventoryService;
     private final Validator validator;
     private final MessageService messageService;
+    private final StorageLocationMapper storageLocationMapper;
 
     public StorageLocationEntity getStorageLocationByName(final String name) {
         return storageLocationRepository.findByName(name)
@@ -36,7 +38,7 @@ public class StorageLocationService {
 
     public StorageLocationResponse getStorageLocationById(final Long storageLocationId) {
         return storageLocationRepository.findById(storageLocationId)
-                .map(this::mapToResponse)
+                .map(storageLocationMapper::toResponse)
                 .orElseThrow(
                         () -> new EntityNotFoundException(
                                 messageService.getMessage(ExceptionMessageKeys.STORAGE_LOCATION_NOT_FOUND_WITH_ID,
@@ -45,19 +47,17 @@ public class StorageLocationService {
 
     public List<StorageLocationResponse> getAllStorageLocations() {
         return storageLocationRepository.findAll().stream()
-                .map(this::mapToResponse)
+                .map(storageLocationMapper::toResponse)
                 .toList();
     }
 
     @Transactional
     public StorageLocationResponse createStorageLocation(final StorageLocationRequest request) {
         validator.validateUniqueness(request.name(), storageLocationRepository::findByName,
-                messageService.getMessage(ExceptionMessageKeys.STORAGE_LOCATION_NAME_EXISTS, request.name())
-        );
-        StorageLocationEntity entity = mapToEntity(request);
-        entity.setInventoryEntity(inventoryService.createNewInventory());
-        StorageLocationEntity saved = storageLocationRepository.save(entity);
-        return mapToResponse(saved);
+                messageService.getMessage(ExceptionMessageKeys.STORAGE_LOCATION_NAME_EXISTS, request.name()));
+
+        StorageLocationEntity entity = storageLocationMapper.toEntity(request, inventoryService.createNewInventory());
+        return storageLocationMapper.toResponse(storageLocationRepository.save(entity));
     }
 
     @Transactional
@@ -65,16 +65,14 @@ public class StorageLocationService {
                                                          final StorageLocationRequest request)
     {
         StorageLocationEntity storageLocationEntity = storageLocationRepository.findById(storageLocationId)
-                .orElseThrow(
-                        () -> new EntityNotFoundException(
+                .orElseThrow(() -> new EntityNotFoundException(
                                 messageService.getMessage(ExceptionMessageKeys.STORAGE_LOCATION_NOT_FOUND_WITH_ID,
                                         storageLocationId)));
 
         updateNameIfProvided(request, storageLocationEntity);
         updateDescriptionIfProvided(request, storageLocationEntity);
 
-        StorageLocationEntity updated = storageLocationRepository.save(storageLocationEntity);
-        return mapToResponse(updated);
+        return storageLocationMapper.toResponse(storageLocationRepository.save(storageLocationEntity));
     }
 
     @Transactional
@@ -103,19 +101,5 @@ public class StorageLocationService {
             );
             storageLocationEntity.setName(request.name());
         }
-    }
-
-    private StorageLocationEntity mapToEntity(final StorageLocationRequest request) {
-        StorageLocationEntity entity = new StorageLocationEntity();
-        entity.setName(request.name());
-        entity.setDescription(request.description());
-        return entity;
-    }
-
-    private StorageLocationResponse mapToResponse(final StorageLocationEntity storageLocationEntity) {
-        return new StorageLocationResponse(
-                storageLocationEntity.getId(),
-                storageLocationEntity.getName(),
-                storageLocationEntity.getDescription());
     }
 }

@@ -3,6 +3,7 @@ package com.cherry.wms_lite.service.container;
 import com.cherry.wms_lite.common.ExceptionMessageKeys;
 import com.cherry.wms_lite.common.MessageService;
 import com.cherry.wms_lite.common.Validator;
+import com.cherry.wms_lite.mapper.container.ContainerMapper;
 import com.cherry.wms_lite.model.entity.ContainerEntity;
 import com.cherry.wms_lite.model.entity.ContainerTypeEntity;
 import com.cherry.wms_lite.model.entity.InventoryEntity;
@@ -19,7 +20,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
-import java.time.temporal.ChronoUnit;
 import java.util.List;
 
 @Service
@@ -32,15 +32,16 @@ public class ContainerService {
     private final Validator validator;
     private final MessageService messageService;
     private final ContainerValidationService containerValidationService;
+    private final ContainerMapper containerMapper;
 
     public List<ContainerResponse> getAllContainers() {
         return containerRepository.findAllByRemovedFalse().stream()
-                .map(this::mapToResponse)
+                .map(containerMapper::toResponse)
                 .toList();
     }
 
     public ContainerResponse getContainerById(final Long containerId) {
-        return mapToResponse(getContainerEntityById(containerId));
+        return containerMapper.toResponse(getContainerEntityById(containerId));
     }
 
     @Transactional
@@ -62,7 +63,7 @@ public class ContainerService {
                 .build();
 
         containerValidationService.validateIsContainerFitIntoInventory(container);
-        return mapToResponse(containerRepository.save(container));
+        return containerMapper.toResponse(containerRepository.save(container));
     }
 
     @Transactional
@@ -77,7 +78,7 @@ public class ContainerService {
         containerValidationService.validateIsContainerFitIntoInventory(container);
         containerValidationService.validateIsContentFitIntoContainerInventory(container);
 
-        return mapToResponse(containerRepository.save(container));
+        return containerMapper.toResponse(containerRepository.save(container));
     }
 
     @Transactional
@@ -160,29 +161,6 @@ public class ContainerService {
         return locationTypeEnum.equals(LocationTypeEnum.CONTAINER)
                 ? getContainerInventory(locationName)
                 : storageLocationService.getStorageLocationInventoryByName(locationName);
-    }
-
-    private ContainerResponse mapToResponse(final ContainerEntity container) {
-        return new ContainerResponse(
-                container.getId(),
-                container.getContainerType().getName(),
-                container.getSerialNumber(),
-                container.getCreatedAt().truncatedTo(ChronoUnit.MILLIS),
-                container.getStatus(),
-                getLocationName(container)
-        );
-    }
-
-    private String getLocationName(final ContainerEntity container) {
-        try {
-            return container.getAttachedToInventoryEntity().getStorageLocation() != null
-                    ? container.getAttachedToInventoryEntity().getStorageLocation().getName()
-                    : container.getAttachedToInventoryEntity().getContainer().getSerialNumber();
-        } catch (NullPointerException e) {
-            throw new IllegalStateException(
-                    messageService.getMessage(ExceptionMessageKeys.CONTAINER_DOES_NOT_HAVE_VALID_STORAGE,
-                            container.getSerialNumber()));
-        }
     }
 
     private ContainerEntity getContainerEntityById(final Long id) {

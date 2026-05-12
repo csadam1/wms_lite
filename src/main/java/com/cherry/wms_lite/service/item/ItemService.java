@@ -3,6 +3,7 @@ package com.cherry.wms_lite.service.item;
 import com.cherry.wms_lite.common.ExceptionMessageKeys;
 import com.cherry.wms_lite.common.MessageService;
 import com.cherry.wms_lite.common.Validator;
+import com.cherry.wms_lite.mapper.item.ItemMapper;
 import com.cherry.wms_lite.model.entity.ContainerEntity;
 import com.cherry.wms_lite.model.entity.InventoryEntity;
 import com.cherry.wms_lite.model.entity.ItemEntity;
@@ -29,16 +30,17 @@ public class ItemService {
     private final StorageLocationService storageLocationService;
     private final ContainerTypeValidationService containerTypeValidationService;
     private final ContainerRepository containerRepository;
+    private final ItemMapper itemMapper;
 
     public List<ItemResponse> getAllItems() {
         return itemRepository.findAll().stream()
-                .map(this::mapToResponse)
+                .map(itemMapper::mapToResponse)
                 .toList();
     }
 
     public ItemResponse getItemById(final Long itemId) {
         return itemRepository.findById(itemId)
-                .map(this::mapToResponse)
+                .map(itemMapper::mapToResponse)
                 .orElseThrow(() -> new EntityNotFoundException(
                         messageService.getMessage(ExceptionMessageKeys.ITEM_NOT_FOUND_WITH_ID, itemId)));
     }
@@ -47,10 +49,10 @@ public class ItemService {
     public ItemResponse createItem(final ItemRequest request) {
         validateCreateRequest(request);
 
-        InventoryEntity inventoryEntity = getInventoryEntityForItem(request.locationTypeEnum(), request.locationName());
-        ItemEntity entity = mapToEntity(request, inventoryEntity);
-        ItemEntity saved = itemRepository.save(entity);
-        return mapToResponse(saved);
+        InventoryEntity attachedToInventory = getInventoryEntityForItem(request.locationTypeEnum(),
+                request.locationName());
+        ItemEntity entity = itemMapper.toEntity(request, attachedToInventory);
+        return itemMapper.mapToResponse(itemRepository.save(entity));
     }
 
     @Transactional
@@ -81,15 +83,6 @@ public class ItemService {
         }
     }
 
-    private ItemEntity mapToEntity(final ItemRequest request, final InventoryEntity attachedToInventoryEntity) {
-        return ItemEntity.builder()
-                .serialNumber(request.serialNumber())
-                .material(request.material())
-                .attachedToInventoryEntity(attachedToInventoryEntity)
-                .quantity(request.quantity())
-                .build();
-    }
-
     private void validateCreateRequest(final ItemRequest request) {
         validator.validateUniqueness(request.serialNumber(), itemRepository::findBySerialNumber,
                 messageService.getMessage(ExceptionMessageKeys.ITEM_SERIAL_NUMBER_EXISTS, request.serialNumber()));
@@ -116,27 +109,5 @@ public class ItemService {
                 .orElseThrow(
                         () -> new EntityNotFoundException(
                                 messageService.getMessage(ExceptionMessageKeys.CONTAINER_NOT_FOUND_WITH_SERIAL, serialNumber)));
-    }
-
-    private ItemResponse mapToResponse(final ItemEntity itemEntity) {
-        return new ItemResponse(
-                itemEntity.getId(),
-                itemEntity.getSerialNumber(),
-                itemEntity.getMaterial(),
-                getStorageName(itemEntity),
-                itemEntity.getQuantity());
-    }
-
-    private String getStorageName(final ItemEntity itemEntity) {
-        try {
-            InventoryEntity inventoryEntity = itemEntity.getAttachedToInventoryEntity();
-            return inventoryEntity.getStorageLocation() != null
-                    ? inventoryEntity.getStorageLocation().getName()
-                    : inventoryEntity.getContainer().getSerialNumber();
-        } catch (NullPointerException e) {
-            throw new IllegalStateException(
-                    messageService.getMessage(ExceptionMessageKeys.ITEM_DOES_NOT_HAVE_VALID_STORAGE,
-                            itemEntity.getSerialNumber()));
-        }
     }
 }
