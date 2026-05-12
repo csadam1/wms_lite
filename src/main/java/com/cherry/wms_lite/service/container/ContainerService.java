@@ -19,7 +19,6 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.Instant;
 import java.util.List;
 
 @Service
@@ -49,18 +48,10 @@ public class ContainerService {
         validateSerialNumberUniqueness(request.serialNumber());
 
         ContainerTypeEntity containerType = getContainerTypeByName(request.containerTypeName());
-        InventoryEntity attachedToInventoryEntity =
-                getAttachedInventory(request.locationName(), request.locationTypeEnum());
+        InventoryEntity attachedToInventory = getAttachedInventory(request.locationName(), request.locationTypeEnum());
+        InventoryEntity inventory = inventoryService.createNewInventory();
 
-        ContainerEntity container = ContainerEntity.builder()
-                .serialNumber(request.serialNumber())
-                .containerType(containerType)
-                .inventoryEntity(inventoryService.createNewInventory())
-                .attachedToInventoryEntity(attachedToInventoryEntity)
-                .createdAt(Instant.now())
-                .status(request.status())
-                .removed(false)
-                .build();
+        ContainerEntity container = containerMapper.toEntity(request, containerType, inventory, attachedToInventory);
 
         containerValidationService.validateIsContainerFitIntoInventory(container);
         return containerMapper.toResponse(containerRepository.save(container));
