@@ -1,16 +1,14 @@
 package com.cherry.wms_lite.model.entity;
 
 import jakarta.persistence.*;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.*;
 
 import java.math.BigDecimal;
 
 @Entity
 @Table(name = "Item")
-@Data
+@Getter
+@Setter
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
@@ -27,7 +25,7 @@ public class ItemEntity {
     private String material;
 
     @ManyToOne(optional = false)
-    @JoinColumn(name = "attached_to_inventory_entity_id", nullable = false)
+    @JoinColumn(name = "attached_to_inventory_id", nullable = false)
     private InventoryEntity attachedToInventoryEntity;
 
     @Column(name = "quantity", nullable = false)

@@ -8,7 +8,8 @@ import java.time.Instant;
 
 @Entity
 @Table(name = "Container")
-@Data
+@Getter
+@Setter
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
@@ -34,15 +35,11 @@ public class ContainerEntity {
     @Column(name = "removed", nullable = false)
     private Boolean removed;
 
-    @ToString.Exclude
-    @EqualsAndHashCode.Exclude
     @OneToOne(optional = false, orphanRemoval = true)
-    @JoinColumn(name = "inventory_entity_id", nullable = false)
+    @JoinColumn(name = "inventory_id", nullable = false)
     private InventoryEntity inventoryEntity;
 
-    @ToString.Exclude
-    @EqualsAndHashCode.Exclude
     @ManyToOne(optional = false)
-    @JoinColumn(name = "attached_to_inventory_entity_id", nullable = false)
+    @JoinColumn(name = "attached_to_inventory_id", nullable = false)
     private InventoryEntity attachedToInventoryEntity;
 }

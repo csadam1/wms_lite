@@ -5,7 +5,8 @@ import lombok.*;
 
 @Entity
 @Table(name = "StorageLocation")
-@Data
+@Getter
+@Setter
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
@@ -21,9 +22,7 @@ public class StorageLocationEntity {
     @Column(name = "description")
     private String description;
 
-    @ToString.Exclude
-    @EqualsAndHashCode.Exclude
     @OneToOne(optional = false, orphanRemoval = true)
-    @JoinColumn(name = "inventory_entity_id", nullable = false)
+    @JoinColumn(name = "inventory_id", nullable = false)
     private InventoryEntity inventoryEntity;
 }

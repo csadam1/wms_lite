@@ -8,7 +8,8 @@ import java.util.List;
 
 @Entity
 @Table(name = "Inventory")
-@Data
+@Getter
+@Setter
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
@@ -26,13 +27,9 @@ public class InventoryEntity {
     @Builder.Default
     private List<ContainerEntity> containers = new ArrayList<>();
 
-    @ToString.Exclude
-    @EqualsAndHashCode.Exclude
     @OneToOne(mappedBy = "inventoryEntity")
     private StorageLocationEntity storageLocation;
 
-    @ToString.Exclude
-    @EqualsAndHashCode.Exclude
     @OneToOne(mappedBy = "inventoryEntity")
     private ContainerEntity container;
 }
