@@ -1,12 +1,15 @@
 package com.cherry.wms_lite.service.storage_location;
 
+import com.cherry.wms_lite.common.ExceptionMessageKeys;
 import com.cherry.wms_lite.common.MessageService;
 import com.cherry.wms_lite.common.Validator;
+import com.cherry.wms_lite.mapper.storage_location.StorageLocationMapper;
 import com.cherry.wms_lite.model.entity.InventoryEntity;
 import com.cherry.wms_lite.model.entity.StorageLocationEntity;
 import com.cherry.wms_lite.model.request.storage_location.StorageLocationRequest;
 import com.cherry.wms_lite.model.response.storage_location.StorageLocationResponse;
 import com.cherry.wms_lite.repository.StorageLocationRepository;
+import com.cherry.wms_lite.repository.container.ContainerRepository;
 import com.cherry.wms_lite.service.inventory.InventoryService;
 import jakarta.persistence.EntityNotFoundException;
 import org.junit.jupiter.api.Test;
@@ -40,20 +43,21 @@ class StorageLocationServiceTest {
     private static final Long ID_2 = 2L;
     private static final String SL_NOT_FOUND_WITH_NAME_EXCEPTION = "Storage Location not found with name: %s";
     private static final String SL_NOT_FOUND_WITH_ID_EXCEPTION = "Storage Location not found with id: %s";
+    private static final String STORAGE_LOCATION_WITH_ID_NOT_EMPTY = "Storage Location with id %s is not empty.";
     private static final String SL_WITH_NAME_EXIST_EXCEPTION = "Storage Location with name already exists: %s";
 
     @Mock
     private StorageLocationRepository storageLocationRepository;
-
+    @Mock
+    private ContainerRepository containerRepository;
     @Mock
     private InventoryService inventoryService;
-
     @Mock
     private Validator validator;
-
     @Mock
     private MessageService messageService;
-
+    @Mock
+    private StorageLocationMapper storageLocationMapper;
     @InjectMocks
     private StorageLocationService storageLocationService;
 
@@ -61,6 +65,7 @@ class StorageLocationServiceTest {
     void getStorageLocationByName_success() {
         // Arrange
         StorageLocationEntity entity = new StorageLocationEntity(ID_1, STORAGE_LOCATION_1, DESCRIPTION_1, null);
+
         when(storageLocationRepository.findByName(STORAGE_LOCATION_1)).thenReturn(Optional.of(entity));
 
         // Act
@@ -96,6 +101,7 @@ class StorageLocationServiceTest {
         InventoryEntity inventory = InventoryEntity.builder().id(ID_1).build();
         StorageLocationEntity entity = new StorageLocationEntity(ID_1, STORAGE_LOCATION_1, DESCRIPTION_1, null);
         entity.setInventory(inventory);
+
         when(storageLocationRepository.findByName(STORAGE_LOCATION_1)).thenReturn(Optional.of(entity));
 
         // Act
@@ -123,7 +129,10 @@ class StorageLocationServiceTest {
     void getStorageLocationById_success() {
         // Arrange
         StorageLocationEntity entity = new StorageLocationEntity(ID_1, STORAGE_LOCATION_1, DESCRIPTION_1, null);
+        StorageLocationResponse response = new StorageLocationResponse(ID_1, STORAGE_LOCATION_1, DESCRIPTION_1);
+
         when(storageLocationRepository.findById(ID_1)).thenReturn(Optional.of(entity));
+        when(storageLocationMapper.toResponse(entity)).thenReturn(response);
 
         // Act
         StorageLocationResponse result = storageLocationService.getStorageLocationById(ID_1);
@@ -142,7 +151,8 @@ class StorageLocationServiceTest {
         String message = SL_NOT_FOUND_WITH_ID_EXCEPTION.formatted(ID_1);
 
         when(storageLocationRepository.findById(ID_1)).thenReturn(Optional.empty());
-        when(messageService.getMessage(any(), any())).thenReturn(message);
+        when(messageService.getMessage(ExceptionMessageKeys.STORAGE_LOCATION_NOT_FOUND_WITH_ID, ID_1))
+                .thenReturn(message);
 
         // Act and Assert
         EntityNotFoundException exception = assertThrows(EntityNotFoundException.class,
@@ -158,7 +168,12 @@ class StorageLocationServiceTest {
         StorageLocationEntity entity1 = new StorageLocationEntity(ID_1, STORAGE_LOCATION_1, DESCRIPTION_1, null);
         StorageLocationEntity entity2 = new StorageLocationEntity(ID_2, STORAGE_LOCATION_2, DESCRIPTION_2, null);
         List<StorageLocationEntity> entities = List.of(entity1, entity2);
+        StorageLocationResponse response1 = new StorageLocationResponse(ID_1, STORAGE_LOCATION_1, DESCRIPTION_1);
+        StorageLocationResponse response2 = new StorageLocationResponse(ID_2, STORAGE_LOCATION_2, DESCRIPTION_2);
+
         when(storageLocationRepository.findAll()).thenReturn(entities);
+        when(storageLocationMapper.toResponse(entity1)).thenReturn(response1);
+        when(storageLocationMapper.toResponse(entity2)).thenReturn(response2);
 
         // Act
         List<StorageLocationResponse> result = storageLocationService.getAllStorageLocations();
@@ -192,14 +207,16 @@ class StorageLocationServiceTest {
         // Arrange
         StorageLocationRequest request = new StorageLocationRequest(STORAGE_LOCATION_1, DESCRIPTION_1);
         InventoryEntity inventory = InventoryEntity.builder().id(ID_1).build();
-        StorageLocationEntity savedEntity = new StorageLocationEntity(ID_1, STORAGE_LOCATION_1, DESCRIPTION_1, null);
-        savedEntity.setInventory(inventory);
+        StorageLocationEntity savedEntity = new StorageLocationEntity(ID_1, STORAGE_LOCATION_1, DESCRIPTION_1, inventory);
         String message = SL_WITH_NAME_EXIST_EXCEPTION.formatted(STORAGE_LOCATION_1);
+        StorageLocationResponse response = new StorageLocationResponse(ID_1, STORAGE_LOCATION_1, DESCRIPTION_1);
 
         doNothing().when(validator).validateUniqueness(eq(STORAGE_LOCATION_1), any(), anyString());
         when(inventoryService.createNewInventory()).thenReturn(inventory);
         when(storageLocationRepository.save(any(StorageLocationEntity.class))).thenReturn(savedEntity);
         when(messageService.getMessage(any(), any())).thenReturn(message);
+        when(storageLocationMapper.toEntity(request, inventory)).thenReturn(savedEntity);
+        when(storageLocationMapper.toResponse(savedEntity)).thenReturn(response);
 
         // Act
         StorageLocationResponse result = storageLocationService.createStorageLocation(request);
@@ -240,6 +257,7 @@ class StorageLocationServiceTest {
         StorageLocationEntity existingEntity = new StorageLocationEntity(ID_1, STORAGE_LOCATION_1, DESCRIPTION_1, null);
         StorageLocationEntity updatedEntity =
                 new StorageLocationEntity(ID_1, UPDATED_STORAGE_LOCATION, UPDATED_DESCRIPTION, null);
+        StorageLocationResponse response = new StorageLocationResponse(ID_1, UPDATED_STORAGE_LOCATION, UPDATED_DESCRIPTION);
         String message = SL_WITH_NAME_EXIST_EXCEPTION.formatted(UPDATED_STORAGE_LOCATION);
 
         when(storageLocationRepository.findById(ID_1)).thenReturn(Optional.of(existingEntity));
@@ -248,6 +266,7 @@ class StorageLocationServiceTest {
         doNothing().when(validator).validateUniqueness(eq(UPDATED_STORAGE_LOCATION), any(), anyString());
         when(storageLocationRepository.save(any(StorageLocationEntity.class))).thenReturn(updatedEntity);
         when(messageService.getMessage(any(), any())).thenReturn(message);
+        when(storageLocationMapper.toResponse(updatedEntity)).thenReturn(response);
 
         // Act
         StorageLocationResponse result = storageLocationService.updateStorageLocation(ID_1, request);
@@ -268,6 +287,7 @@ class StorageLocationServiceTest {
         StorageLocationEntity existingEntity = new StorageLocationEntity(ID_1, STORAGE_LOCATION_1, DESCRIPTION_1, null);
         StorageLocationEntity updatedEntity =
                 new StorageLocationEntity(ID_1, UPDATED_STORAGE_LOCATION, DESCRIPTION_1, null);
+        StorageLocationResponse response = new StorageLocationResponse(ID_1, UPDATED_STORAGE_LOCATION, DESCRIPTION_1);
         String message = SL_WITH_NAME_EXIST_EXCEPTION.formatted(UPDATED_STORAGE_LOCATION);
 
         when(storageLocationRepository.findById(ID_1)).thenReturn(Optional.of(existingEntity));
@@ -276,6 +296,7 @@ class StorageLocationServiceTest {
         doNothing().when(validator).validateUniqueness(eq(UPDATED_STORAGE_LOCATION), any(), anyString());
         when(storageLocationRepository.save(any(StorageLocationEntity.class))).thenReturn(updatedEntity);
         when(messageService.getMessage(any(), any())).thenReturn(message);
+        when(storageLocationMapper.toResponse(updatedEntity)).thenReturn(response);
 
         // Act
         StorageLocationResponse result = storageLocationService.updateStorageLocation(ID_1, request);
@@ -295,11 +316,13 @@ class StorageLocationServiceTest {
         StorageLocationEntity existingEntity = new StorageLocationEntity(ID_1, STORAGE_LOCATION_1, DESCRIPTION_1, null);
         StorageLocationEntity updatedEntity =
                 new StorageLocationEntity(ID_1, STORAGE_LOCATION_1, UPDATED_DESCRIPTION, null);
+        StorageLocationResponse response = new StorageLocationResponse(ID_1, STORAGE_LOCATION_1, UPDATED_DESCRIPTION);
 
         when(storageLocationRepository.findById(ID_1)).thenReturn(Optional.of(existingEntity));
         when(validator.isNullOrEmpty(null)).thenReturn(true);
         when(validator.isNullOrEmpty(UPDATED_DESCRIPTION)).thenReturn(false);
         when(storageLocationRepository.save(any(StorageLocationEntity.class))).thenReturn(updatedEntity);
+        when(storageLocationMapper.toResponse(updatedEntity)).thenReturn(response);
 
         // Act
         StorageLocationResponse result = storageLocationService.updateStorageLocation(ID_1, request);
@@ -358,6 +381,8 @@ class StorageLocationServiceTest {
     void deleteStorageLocationById_success() {
         // Arrange
         when(storageLocationRepository.existsById(ID_1)).thenReturn(true);
+        when(containerRepository.existsByRemovedFalseAndAttachedToInventory_StorageLocation_Id(ID_1))
+                .thenReturn(false);
         doNothing().when(storageLocationRepository).deleteById(ID_1);
 
         // Act
@@ -378,6 +403,24 @@ class StorageLocationServiceTest {
 
         // Act and Assert
         EntityNotFoundException exception = assertThrows(EntityNotFoundException.class,
+                () -> storageLocationService.deleteStorageLocationById(ID_1));
+
+        assertEquals(message, exception.getMessage());
+        verify(storageLocationRepository, times(1)).existsById(ID_1);
+        verify(storageLocationRepository, never()).deleteById(ID_1);
+    }
+
+    @Test
+    void deleteStorageLocationById_notEmpty() {
+        // Arrange
+        String message = STORAGE_LOCATION_WITH_ID_NOT_EMPTY.formatted(ID_1);
+
+        when(storageLocationRepository.existsById(ID_1)).thenReturn(true);
+        when(containerRepository.existsByRemovedFalseAndAttachedToInventory_StorageLocation_Id(ID_1)).thenReturn(true);
+        when(messageService.getMessage(any(), any())).thenReturn(message);
+
+        // Act and Assert
+        IllegalStateException exception = assertThrows(IllegalStateException.class,
                 () -> storageLocationService.deleteStorageLocationById(ID_1));
 
         assertEquals(message, exception.getMessage());

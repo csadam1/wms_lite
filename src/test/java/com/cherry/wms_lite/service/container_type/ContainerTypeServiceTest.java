@@ -1,7 +1,6 @@
 package com.cherry.wms_lite.service.container_type;
 
 import com.cherry.wms_lite.common.MessageService;
-import com.cherry.wms_lite.common.Utils;
 import com.cherry.wms_lite.common.Validator;
 import com.cherry.wms_lite.model.entity.ContainerEntity;
 import com.cherry.wms_lite.model.entity.ContainerTypeEntity;
@@ -62,9 +61,6 @@ class ContainerTypeServiceTest {
 
     @Mock
     private Validator validator;
-
-    @Mock
-    private ContainerTypeValidationService containerTypeValidationService;
 
     @Mock
     private MessageService messageService;
@@ -301,8 +297,6 @@ class ContainerTypeServiceTest {
         when(validator.isNullOrEmpty(null)).thenReturn(true);
         when(containerTypeRepository.save(any(ContainerTypeEntity.class))).thenReturn(updatedEntity);
         when(containerRepository.findAllByContainerType_IdAndRemovedFalse(ID_1)).thenReturn(containerEntities);
-        when(containerTypeValidationService.isContainerTypeChangeValid(any(), eq(UPDATED_SMALLER_CAPACITY))).thenReturn(
-                true);
 
         // Act
         ContainerTypeResponse result = containerTypeService.updateContainerType(ID_1, request);
@@ -341,15 +335,12 @@ class ContainerTypeServiceTest {
         ContainerEntity entity1 = getContainerEntity(ID_1, CONTAINER_SERIAL_NUMBER_1);
         ContainerEntity entity2 = getContainerEntity(ID_2, CONTAINER_SERIAL_NUMBER_2);
         List<ContainerEntity> containerEntities = List.of(entity1, entity2);
-        String message = CONTAINERS_EXCEED_NEW_CAPACITY_EXCEPTION.formatted(
-                Utils.formatListToString(List.of(CONTAINER_SERIAL_NUMBER_1, CONTAINER_SERIAL_NUMBER_2)));
+        String message = CONTAINERS_EXCEED_NEW_CAPACITY_EXCEPTION;
 
         when(containerTypeRepository.findById(ID_1)).thenReturn(Optional.of(existingEntity));
         when(validator.isPositiveBigDecimal(UPDATED_SMALLER_CAPACITY)).thenReturn(true);
         when(validator.isNullOrEmpty(null)).thenReturn(true);
         when(containerRepository.findAllByContainerType_IdAndRemovedFalse(ID_1)).thenReturn(containerEntities);
-        when(containerTypeValidationService.isContainerTypeChangeValid(any(), eq(UPDATED_SMALLER_CAPACITY))).thenReturn(
-                false);
         when(messageService.getMessage(any(), any())).thenReturn(message);
 
         // Act and Assert

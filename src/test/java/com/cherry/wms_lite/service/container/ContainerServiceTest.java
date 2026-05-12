@@ -9,7 +9,6 @@ import com.cherry.wms_lite.model.request.container.ContainerRequest;
 import com.cherry.wms_lite.model.response.container.ContainerResponse;
 import com.cherry.wms_lite.repository.container.ContainerRepository;
 import com.cherry.wms_lite.repository.container.ContainerTypeRepository;
-import com.cherry.wms_lite.service.container_type.ContainerTypeValidationService;
 import com.cherry.wms_lite.service.inventory.InventoryService;
 import com.cherry.wms_lite.service.storage_location.StorageLocationService;
 import jakarta.persistence.EntityNotFoundException;
@@ -67,8 +66,6 @@ class ContainerServiceTest {
     private StorageLocationService storageLocationService;
     @Mock
     private InventoryService inventoryService;
-    @Mock
-    private ContainerTypeValidationService containerTypeValidationService;
     @Mock
     private Validator validator;
     @Mock
@@ -200,8 +197,6 @@ class ContainerServiceTest {
         when(containerTypeRepository.findByName(CONTAINER_TYPE_NAME_1)).thenReturn(Optional.of(containerType));
         when(containerRepository.findBySerialNumberAndRemovedFalse(SERIAL_NUMBER_3)).thenReturn(
                 Optional.of(parentContainer));
-        when(containerTypeValidationService.containerContentIsLessOrEqualThanNewCapacity(parentContainer, CAPACITY_1))
-                .thenReturn(true);
         when(inventoryService.createNewInventory()).thenReturn(newInventory);
         when(containerRepository.save(any())).thenReturn(container);
         doNothing().when(validator).validateUniqueness(eq(SERIAL_NUMBER_1), any(), any());
@@ -236,8 +231,6 @@ class ContainerServiceTest {
         when(containerTypeRepository.findByName(CONTAINER_TYPE_NAME_2)).thenReturn(Optional.of(containerType));
         when(containerRepository.findBySerialNumberAndRemovedFalse(SERIAL_NUMBER_3)).thenReturn(
                 Optional.of(parentContainer));
-        when(containerTypeValidationService.containerContentIsLessOrEqualThanNewCapacity(parentContainer, CAPACITY_2))
-                .thenReturn(false);
         doNothing().when(validator).validateUniqueness(eq(SERIAL_NUMBER_1), any(), any());
         when(messageService.getMessage(any(), any())).thenReturn(message);
 
@@ -346,7 +339,6 @@ class ContainerServiceTest {
         when(validator.isNullOrEmpty(null)).thenReturn(true);
         when(validator.isNullOrEmpty(CONTAINER_TYPE_NAME_2)).thenReturn(false);
         when(containerTypeRepository.findByName(CONTAINER_TYPE_NAME_2)).thenReturn(Optional.of(newContainerType));
-        when(containerTypeValidationService.isContainerTypeChangeValid(container, CAPACITY_2)).thenReturn(true);
         when(containerRepository.save(container)).thenReturn(container);
 
         // Act
@@ -370,7 +362,6 @@ class ContainerServiceTest {
         when(validator.isNullOrEmpty(null)).thenReturn(true);
         when(validator.isNullOrEmpty(CONTAINER_TYPE_NAME_2)).thenReturn(false);
         when(containerTypeRepository.findByName(CONTAINER_TYPE_NAME_2)).thenReturn(Optional.of(newContainerType));
-        when(containerTypeValidationService.isContainerTypeChangeValid(container, CAPACITY_2)).thenReturn(false);
         when(messageService.getMessage(any(), any())).thenReturn(message);
 
         // Act and Assert
@@ -421,7 +412,6 @@ class ContainerServiceTest {
         when(validator.isNullOrEmpty(LocationTypeEnum.CONTAINER)).thenReturn(false);
         when(containerRepository.findBySerialNumberAndRemovedFalse(SERIAL_NUMBER_2)).thenReturn(
                 Optional.of(parentContainer));
-        when(containerTypeValidationService.containerFitsIntoLocation(container, CAPACITY_1)).thenReturn(true);
         when(containerRepository.save(container)).thenReturn(container);
 
         // Act
@@ -448,7 +438,6 @@ class ContainerServiceTest {
         when(validator.isNullOrEmpty(LocationTypeEnum.CONTAINER)).thenReturn(false);
         when(containerRepository.findBySerialNumberAndRemovedFalse(SERIAL_NUMBER_2)).thenReturn(
                 Optional.of(parentContainer));
-        when(containerTypeValidationService.containerFitsIntoLocation(container, CAPACITY_1)).thenReturn(false);
         when(messageService.getMessage(any(), any())).thenReturn(message);
 
         // Act and Assert
