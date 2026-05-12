@@ -20,5 +20,5 @@ public interface ContainerRepository extends JpaRepository<ContainerEntity, Long
 
     boolean existsByContainerType_Id(@NonNull Long id);
 
-    boolean existsByRemovedFalseAndAttachedToInventoryEntity_StorageLocation_Id(@NonNull Long id);
+    boolean existsByRemovedFalseAndAttachedToInventory_StorageLocation_Id(@NonNull Long id);
 }

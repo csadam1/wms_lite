@@ -40,7 +40,7 @@ public class ContainerValidationService {
 
             // Is Parent Container Capacity exceeded by its quantity plus container size
             if (parentContainerCapacity.compareTo(containerSize.add(parentContainerQuantity)) < 0) {
-                throw new IllegalStateException(messageService.getMessage(
+                throw new IllegalArgumentException(messageService.getMessage(
                         ExceptionMessageKeys.CONTAINER_CAPACITY_EXCEEDED, parentContainer.getSerialNumber()));
             }
 
@@ -56,7 +56,7 @@ public class ContainerValidationService {
 
         // Is Container Capacity exceeded by its Quantity
         if (containerCapacity.compareTo(containerQuantity) < 0) {
-            throw new IllegalStateException(messageService.getMessage(
+            throw new IllegalArgumentException(messageService.getMessage(
                     ExceptionMessageKeys.CONTAINER_CAPACITY_EXCEEDED, container.getSerialNumber()));
         }
     }

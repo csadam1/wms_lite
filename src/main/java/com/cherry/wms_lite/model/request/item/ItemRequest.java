@@ -2,8 +2,10 @@ package com.cherry.wms_lite.model.request.item;
 
 import com.cherry.wms_lite.model.enumerate.LocationTypeEnum;
 import com.cherry.wms_lite.model.validation.OnCreate;
+import com.cherry.wms_lite.model.validation.OnUpdate;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.PositiveOrZero;
 
 import java.math.BigDecimal;
 
@@ -21,5 +23,6 @@ public record ItemRequest(
         LocationTypeEnum locationTypeEnum,
 
         @NotNull(message = "Quantity is required", groups = OnCreate.class)
+        @PositiveOrZero(message = "Quantity cannot be negative", groups = {OnCreate.class, OnUpdate.class})
         BigDecimal quantity
 ) {}

@@ -12,7 +12,7 @@ import com.cherry.wms_lite.model.request.item.ItemRequest;
 import com.cherry.wms_lite.model.response.item.ItemResponse;
 import com.cherry.wms_lite.repository.ItemRepository;
 import com.cherry.wms_lite.repository.container.ContainerRepository;
-import com.cherry.wms_lite.service.container_type.ContainerTypeValidationService;
+import com.cherry.wms_lite.service.container.ContainerValidationService;
 import com.cherry.wms_lite.service.storage_location.StorageLocationService;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
@@ -28,37 +28,49 @@ public class ItemService {
     private final Validator validator;
     private final MessageService messageService;
     private final StorageLocationService storageLocationService;
-    private final ContainerTypeValidationService containerTypeValidationService;
     private final ContainerRepository containerRepository;
     private final ItemMapper itemMapper;
+    private final ContainerValidationService containerValidationService;
 
     public List<ItemResponse> getAllItems() {
         return itemRepository.findAll().stream()
-                .map(itemMapper::mapToResponse)
+                .map(itemMapper::toResponse)
                 .toList();
     }
 
     public ItemResponse getItemById(final Long itemId) {
         return itemRepository.findById(itemId)
-                .map(itemMapper::mapToResponse)
+                .map(itemMapper::toResponse)
                 .orElseThrow(() -> new EntityNotFoundException(
                         messageService.getMessage(ExceptionMessageKeys.ITEM_NOT_FOUND_WITH_ID, itemId)));
     }
 
     @Transactional
     public ItemResponse createItem(final ItemRequest request) {
-        validateCreateRequest(request);
+        validateSerialNumberUniqueness(request.serialNumber());
 
         InventoryEntity attachedToInventory = getInventoryEntityForItem(request.locationTypeEnum(),
                 request.locationName());
-        ItemEntity entity = itemMapper.toEntity(request, attachedToInventory);
-        return itemMapper.mapToResponse(itemRepository.save(entity));
+        ItemEntity item = itemMapper.toEntity(request, attachedToInventory);
+        attachedToInventory.getItems().add(item);
+
+        validateContainerCapacity(item, request.locationTypeEnum());
+
+        return itemMapper.toResponse(itemRepository.save(item));
     }
 
     @Transactional
     public ItemResponse updateItem(final Long itemId, final ItemRequest request) {
-        // TODO: TBC
-        return null;
+        ItemEntity item = getItemEntityById(itemId);
+
+        changeSerialNumberIfProvided(item, request);
+        changeMaterialIfProvided(item, request);
+        changeQuantityIfProvided(item, request);
+        changeLocationIfProvided(item, request);
+
+        validateContainerCapacity(item, getLocationTypeEnum(item));
+
+        return itemMapper.toResponse(item);
     }
 
     @Transactional
@@ -70,11 +82,72 @@ public class ItemService {
         itemRepository.deleteById(itemId);
     }
 
-    private InventoryEntity getInventoryEntityForItem(final LocationTypeEnum locationTypeEnum,
-                                                      final String locationName)
+    private LocationTypeEnum getLocationTypeEnum(final ItemEntity item) {
+        return validator.isNullOrEmpty(item.getAttachedToInventory().getStorageLocation())
+                ? LocationTypeEnum.CONTAINER : LocationTypeEnum.STORAGE_LOCATION;
+    }
+
+    private void changeQuantityIfProvided(final ItemEntity item, final ItemRequest request) {
+        if (!validator.isNullOrEmpty(request.quantity())) {
+            item.setQuantity(request.quantity());
+        }
+    }
+
+    private void changeLocationIfProvided(final ItemEntity item, final ItemRequest request) {
+        if (!validator.isNullOrEmpty(request.locationName()) && !validator.isNullOrEmpty(request.locationTypeEnum())) {
+            item.setAttachedToInventory(
+                    getContainerAttachedToInventory(request.locationName(), request.locationTypeEnum()));
+        }
+    }
+
+    private InventoryEntity getContainerAttachedToInventory(final String locationName,
+                                                            final LocationTypeEnum locationTypeEnum)
     {
+        return LocationTypeEnum.CONTAINER.equals(locationTypeEnum)
+                ? getContainerInventory(locationName)
+                : storageLocationService.getStorageLocationInventoryByName(locationName);
+    }
+
+    private InventoryEntity getContainerInventory(final String serialNumber) {
+        return getContainerEntityByName(serialNumber)
+                .getInventory();
+    }
+
+    private void changeMaterialIfProvided(final ItemEntity item, final ItemRequest request) {
+        if (!validator.isNullOrEmpty(request.material())) {
+            item.setMaterial(request.material());
+        }
+    }
+
+    private void changeSerialNumberIfProvided(final ItemEntity item, final ItemRequest request) {
+        if (!validator.isNullOrEmpty(request.serialNumber())) {
+            validateSerialNumberUniqueness(request.serialNumber());
+            item.setSerialNumber(request.serialNumber());
+        }
+    }
+
+    private ItemEntity getItemEntityById(final Long itemId) {
+        return itemRepository.findById(itemId)
+                .orElseThrow(() -> new EntityNotFoundException(
+                        messageService.getMessage(ExceptionMessageKeys.ITEM_NOT_FOUND_WITH_ID, itemId)));
+    }
+
+    private void validateContainerCapacity(final ItemEntity item, final LocationTypeEnum locationTypeEnum) {
+        if (LocationTypeEnum.CONTAINER.equals(locationTypeEnum)) {
+            ContainerEntity parentContainer = item.getAttachedToInventory().getContainer();
+            containerValidationService.validateIsContentFitIntoContainerInventory(parentContainer);
+        }
+    }
+
+    private void validateSerialNumberUniqueness(final String serialNumber) {
+        validator.validateUniqueness(serialNumber, itemRepository::findBySerialNumber,
+                messageService.getMessage(ExceptionMessageKeys.ITEM_SERIAL_NUMBER_EXISTS, serialNumber));
+    }
+
+    private InventoryEntity getInventoryEntityForItem(final LocationTypeEnum locationTypeEnum,
+                                                      final String locationName) {
         try {
-            return locationTypeEnum.equals(LocationTypeEnum.STORAGE_LOCATION)
+            return LocationTypeEnum.STORAGE_LOCATION.equals(locationTypeEnum)
                     ? storageLocationService.getStorageLocationInventoryByName(locationName)
                     : getContainerEntityByName(locationName).getInventory();
         } catch (NullPointerException e) {
@@ -83,31 +156,9 @@ public class ItemService {
         }
     }
 
-    private void validateCreateRequest(final ItemRequest request) {
-        validator.validateUniqueness(request.serialNumber(), itemRepository::findBySerialNumber,
-                messageService.getMessage(ExceptionMessageKeys.ITEM_SERIAL_NUMBER_EXISTS, request.serialNumber()));
-
-        if (request.locationTypeEnum().equals(LocationTypeEnum.STORAGE_LOCATION)) {
-            storageLocationService.getStorageLocationByName(request.locationName());
-        } else {
-            // Does container have enough capacity for new item
-            ContainerEntity parentContainer = getContainerEntityByName(request.locationName());
-            boolean isContainerOverloaded =
-                    !containerTypeValidationService.containerContentIsLessOrEqualThanNewCapacity(parentContainer,
-                            request.quantity());
-
-            if (isContainerOverloaded) {
-                throw new IllegalStateException(
-                        messageService.getMessage(ExceptionMessageKeys.CONTAINER_CAPACITY_EXCEEDED,
-                                parentContainer.getSerialNumber()));
-            }
-        }
-    }
-
     private ContainerEntity getContainerEntityByName(final String serialNumber) {
         return containerRepository.findBySerialNumberAndRemovedFalse(serialNumber)
-                .orElseThrow(
-                        () -> new EntityNotFoundException(
-                                messageService.getMessage(ExceptionMessageKeys.CONTAINER_NOT_FOUND_WITH_SERIAL, serialNumber)));
+                .orElseThrow(() -> new EntityNotFoundException(
+                        messageService.getMessage(ExceptionMessageKeys.CONTAINER_NOT_FOUND_WITH_SERIAL, serialNumber)));
     }
 }

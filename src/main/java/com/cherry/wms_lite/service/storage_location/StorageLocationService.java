@@ -83,8 +83,7 @@ public class StorageLocationService {
             throw new EntityNotFoundException(
                     messageService.getMessage(ExceptionMessageKeys.STORAGE_LOCATION_NOT_FOUND_WITH_ID, storageLocationId));
         }
-        if (containerRepository.existsByRemovedFalseAndAttachedToInventoryEntity_StorageLocation_Id(storageLocationId))
-        {
+        if (containerRepository.existsByRemovedFalseAndAttachedToInventory_StorageLocation_Id(storageLocationId)) {
             throw new IllegalStateException(
                     messageService.getMessage(ExceptionMessageKeys.STORAGE_LOCATION_WITH_ID_NOT_EMPTY, storageLocationId));
         }

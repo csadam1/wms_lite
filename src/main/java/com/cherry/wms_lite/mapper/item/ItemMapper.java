@@ -14,7 +14,7 @@ import org.springframework.stereotype.Component;
 public class ItemMapper {
     private final MessageService messageService;
 
-    public ItemResponse mapToResponse(final ItemEntity item) {
+    public ItemResponse toResponse(final ItemEntity item) {
         return new ItemResponse(
                 item.getId(),
                 item.getSerialNumber(),
