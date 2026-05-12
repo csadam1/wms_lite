@@ -1,13 +1,13 @@
 package com.cherry.wms_lite.common;
 
 import lombok.RequiredArgsConstructor;
-import org.springframework.stereotype.Service;
+import org.springframework.stereotype.Component;
 
 import java.math.BigDecimal;
 import java.util.Optional;
 import java.util.function.Function;
 
-@Service
+@Component
 @RequiredArgsConstructor
 public class Validator {
     public boolean isNullOrEmpty(final Object object) {

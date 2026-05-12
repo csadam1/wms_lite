@@ -11,7 +11,6 @@ import com.cherry.wms_lite.model.request.container.ContainerRequest;
 import com.cherry.wms_lite.model.response.container.ContainerResponse;
 import com.cherry.wms_lite.repository.container.ContainerRepository;
 import com.cherry.wms_lite.repository.container.ContainerTypeRepository;
-import com.cherry.wms_lite.service.container_type.ContainerTypeValidationService;
 import com.cherry.wms_lite.service.inventory.InventoryService;
 import com.cherry.wms_lite.service.storage_location.StorageLocationService;
 import jakarta.persistence.EntityNotFoundException;
@@ -19,7 +18,6 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.math.BigDecimal;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
@@ -31,9 +29,9 @@ public class ContainerService {
     private final ContainerTypeRepository containerTypeRepository;
     private final StorageLocationService storageLocationService;
     private final InventoryService inventoryService;
-    private final ContainerTypeValidationService containerTypeValidationService;
     private final Validator validator;
     private final MessageService messageService;
+    private final ContainerValidationService containerValidationService;
 
     public List<ContainerResponse> getAllContainers() {
         return containerRepository.findAllByRemovedFalse().stream()
@@ -47,13 +45,13 @@ public class ContainerService {
 
     @Transactional
     public ContainerResponse createContainer(final ContainerRequest request) {
-        validateCreateContainerRequest(request);
+        validateSerialNumberUniqueness(request.serialNumber());
 
         ContainerTypeEntity containerType = getContainerTypeByName(request.containerTypeName());
         InventoryEntity attachedToInventoryEntity =
                 getAttachedInventory(request.locationName(), request.locationTypeEnum());
 
-        ContainerEntity containerEntity = ContainerEntity.builder()
+        ContainerEntity container = ContainerEntity.builder()
                 .serialNumber(request.serialNumber())
                 .containerType(containerType)
                 .inventoryEntity(inventoryService.createNewInventory())
@@ -63,20 +61,23 @@ public class ContainerService {
                 .removed(false)
                 .build();
 
-        return mapToResponse(containerRepository.save(containerEntity));
+        containerValidationService.validateIsContainerFitIntoInventory(container);
+        return mapToResponse(containerRepository.save(container));
     }
 
     @Transactional
     public ContainerResponse updateContainer(final Long containerId, final ContainerRequest request) {
-        ContainerEntity containerEntity = getContainerEntityById(containerId);
+        ContainerEntity container = getContainerEntityById(containerId);
 
-        validateIsSerialNumberAlreadyExist(request.serialNumber());
+        changeSerialNumberIfProvided(container, request);
+        changeStatusIfProvided(container, request);
+        changeContainerTypeIfProvided(container, request);
+        changeLocationIfProvided(container, request);
 
-        changeStatusIfProvided(containerEntity, request);
-        changeContainerTypeIfProvided(containerEntity, request);
-        changeLocationIfProvided(containerEntity, request);
+        containerValidationService.validateIsContainerFitIntoInventory(container);
+        containerValidationService.validateIsContentFitIntoContainerInventory(container);
 
-        return mapToResponse(containerRepository.save(containerEntity));
+        return mapToResponse(containerRepository.save(container));
     }
 
     @Transactional
@@ -98,10 +99,10 @@ public class ContainerService {
                                 messageService.getMessage(ExceptionMessageKeys.CONTAINER_TYPE_NOT_FOUND_WITH_NAME, name)));
     }
 
-    private void validateIsSerialNumberAlreadyExist(final String serialNumber) {
-        if (!validator.isNullOrEmpty(serialNumber)) {
-            validator.validateUniqueness(serialNumber, containerRepository::findBySerialNumberAndRemovedFalse,
-                    messageService.getMessage(ExceptionMessageKeys.CONTAINER_SERIAL_EXISTS, serialNumber));
+    private void changeSerialNumberIfProvided(final ContainerEntity container, final ContainerRequest request) {
+        if (!validator.isNullOrEmpty(request.serialNumber())) {
+            validateSerialNumberUniqueness(request.serialNumber());
+            container.setSerialNumber(request.serialNumber());
         }
     }
 
@@ -114,72 +115,20 @@ public class ContainerService {
     private void changeContainerTypeIfProvided(final ContainerEntity containerEntity, final ContainerRequest request) {
         if (!validator.isNullOrEmpty(request.containerTypeName())) {
             ContainerTypeEntity containerType = getContainerTypeByName(request.containerTypeName());
-
-            validateContainerTypeChange(containerEntity, containerType);
             containerEntity.setContainerType(containerType);
-        }
-    }
-
-    private void validateContainerTypeChange(final ContainerEntity containerEntity,
-                                             final ContainerTypeEntity containerType)
-    {
-        boolean isValid =
-                containerTypeValidationService.isContainerTypeChangeValid(containerEntity, containerType.getCapacity());
-        if (!isValid) {
-            throw new IllegalStateException(
-                    messageService.getMessage(ExceptionMessageKeys.PARENT_CONTAINER_CAPACITY_EXCEEDED,
-                            containerEntity.getSerialNumber()));
         }
     }
 
     private void changeLocationIfProvided(final ContainerEntity containerEntity, final ContainerRequest request) {
         if (!validator.isNullOrEmpty(request.locationName()) && !validator.isNullOrEmpty(request.locationTypeEnum())) {
-
             containerEntity.setAttachedToInventoryEntity(
                     getContainerAttachedToInventory(request.locationName(), request.locationTypeEnum()));
-
-            validateContainerLocationChange(containerEntity, request);
         }
     }
 
-    private void validateContainerLocationChange(final ContainerEntity containerEntity,
-                                                 final ContainerRequest request)
-    {
-        if (request.locationTypeEnum().equals(LocationTypeEnum.STORAGE_LOCATION)) {
-            return;
-        }
-
-        BigDecimal capacity = containerEntity.getContainerType().getCapacity();
-        boolean isValid = containerTypeValidationService.containerFitsIntoLocation(containerEntity, capacity);
-        if (!isValid) {
-            throw new IllegalStateException(
-                    messageService.getMessage(ExceptionMessageKeys.PARENT_CONTAINER_CAPACITY_EXCEEDED,
-                            containerEntity.getSerialNumber()));
-        }
-    }
-
-    private void validateCreateContainerRequest(final ContainerRequest request) {
-        //Is Container already exist
-        validator.validateUniqueness(request.serialNumber(), containerRepository::findBySerialNumberAndRemovedFalse,
-                messageService.getMessage(ExceptionMessageKeys.CONTAINER_SERIAL_EXISTS, request.serialNumber())
-        );
-
-        //Does target location exist
-        if (request.locationTypeEnum().equals(LocationTypeEnum.STORAGE_LOCATION)) {
-            storageLocationService.getStorageLocationByName(request.locationName());
-        } else {
-            // Does parent container have enough capacity for new container
-            BigDecimal capacity = getContainerTypeByName(request.containerTypeName()).getCapacity();
-            ContainerEntity parentContainer = getContainerEntityByName(request.locationName());
-            boolean isContainerOverloaded =
-                    !containerTypeValidationService.containerContentIsLessOrEqualThanNewCapacity(parentContainer, capacity);
-
-            if (isContainerOverloaded) {
-                throw new IllegalStateException(
-                        messageService.getMessage(ExceptionMessageKeys.PARENT_CONTAINER_CAPACITY_EXCEEDED,
-                                parentContainer.getSerialNumber()));
-            }
-        }
+    private void validateSerialNumberUniqueness(final String serialNumber) {
+        validator.validateUniqueness(serialNumber, containerRepository::findBySerialNumberAndRemovedFalse,
+                messageService.getMessage(ExceptionMessageKeys.CONTAINER_SERIAL_EXISTS, serialNumber));
     }
 
     private boolean isContainerInventoryEmpty(final Long containerId) {

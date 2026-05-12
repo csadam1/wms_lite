@@ -14,9 +14,10 @@ public final class ExceptionMessageKeys {
     public static final String CONTAINER_NOT_FOUND_WITH_ID = "exception.container.not_found_with_id";
     public static final String CONTAINER_NOT_FOUND_WITH_SERIAL = "exception.container.not_found_with_serial";
     public static final String CONTAINER_NOT_EMPTY = "exception.container.not_empty";
-    public static final String PARENT_CONTAINER_CAPACITY_EXCEEDED = "exception.container.parent_capacity_exceeded";
+    public static final String CONTAINER_CAPACITY_EXCEEDED = "exception.container.capacity_exceeded";
     public static final String CONTAINER_TYPE_NOT_FOUND_WITH_NAME = "exception.container.type_not_found_with_name";
     public static final String CONTAINER_DOES_NOT_HAVE_VALID_STORAGE = "exception.container.does_not_have_valid_storage";
+    public static final String CONTAINER_IS_NOT_ANY_IN_INVENTORY = "exception.container.is_not_in_any_inventory";
 
     // Storage Location
     public static final String STORAGE_LOCATION_NOT_FOUND_WITH_NAME = "exception.storage_location.not_found_with_name";
@@ -30,4 +31,7 @@ public final class ExceptionMessageKeys {
 
     // Location
     public static final String LOCATION_NAME_DOES_NOT_EXIST = "exception.location.name_does_not_exist";
+
+    // Inventory
+    public static final String PARENT_INVENTORY_IS_UNATTACHED = "exception.inventory.parent_inventory_is_unattached";
 }

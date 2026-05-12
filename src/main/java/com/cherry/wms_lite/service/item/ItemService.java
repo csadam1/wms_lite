@@ -105,7 +105,7 @@ public class ItemService {
 
             if (isContainerOverloaded) {
                 throw new IllegalStateException(
-                        messageService.getMessage(ExceptionMessageKeys.PARENT_CONTAINER_CAPACITY_EXCEEDED,
+                        messageService.getMessage(ExceptionMessageKeys.CONTAINER_CAPACITY_EXCEEDED,
                                 parentContainer.getSerialNumber()));
             }
         }
