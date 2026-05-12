@@ -26,7 +26,7 @@ public class ItemEntity {
 
     @ManyToOne(optional = false)
     @JoinColumn(name = "attached_to_inventory_id", nullable = false)
-    private InventoryEntity attachedToInventoryEntity;
+    private InventoryEntity attachedToInventory;
 
     @Column(name = "quantity", nullable = false)
     private BigDecimal quantity;

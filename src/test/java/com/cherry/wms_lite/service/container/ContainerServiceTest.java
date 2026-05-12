@@ -389,7 +389,7 @@ class ContainerServiceTest {
         ContainerEntity oldContainer = buildContainer1WithEmptyInventory();
         InventoryEntity newStorageLocation = buildStorageLocationInventory2();
         ContainerEntity newContainer = buildContainer1WithEmptyInventory();
-        newContainer.setAttachedToInventoryEntity(newStorageLocation);
+        newContainer.setAttachedToInventory(newStorageLocation);
 
         when(containerRepository.findByIdAndRemovedFalse(ID_1)).thenReturn(Optional.of(oldContainer));
         when(validator.isNullOrEmpty(null)).thenReturn(true);
@@ -412,7 +412,7 @@ class ContainerServiceTest {
         ContainerRequest request = new ContainerRequest(null, null, null, SERIAL_NUMBER_2, LocationTypeEnum.CONTAINER);
 
         ContainerEntity parentContainer = buildContainer2WithEmptyInventory();
-        parentContainer.getInventoryEntity().setContainer(parentContainer);
+        parentContainer.getInventory().setContainer(parentContainer);
         ContainerEntity container = buildContainer1WithEmptyInventory();
 
         when(containerRepository.findByIdAndRemovedFalse(ID_1)).thenReturn(Optional.of(container));
@@ -438,9 +438,9 @@ class ContainerServiceTest {
         ContainerRequest request = new ContainerRequest(null, null, null, SERIAL_NUMBER_2, LocationTypeEnum.CONTAINER);
 
         ContainerEntity parentContainer = buildContainer2WithEmptyInventory();
-        parentContainer.getInventoryEntity().setContainer(parentContainer);
+        parentContainer.getInventory().setContainer(parentContainer);
         ContainerEntity container = buildContainer1WithEmptyInventory();
-        container.setAttachedToInventoryEntity(parentContainer.getInventoryEntity());
+        container.setAttachedToInventory(parentContainer.getInventory());
         String message = PARENT_CONTAINER_CAPACITY_EXCEEDED_EXCEPTION.formatted(SERIAL_NUMBER_1);
         when(containerRepository.findByIdAndRemovedFalse(ID_1)).thenReturn(Optional.of(container));
         when(validator.isNullOrEmpty(null)).thenReturn(true);
@@ -504,8 +504,8 @@ class ContainerServiceTest {
                 .containerType(buildContainerType1())
                 .createdAt(Instant.EPOCH)
                 .status(ContainerStatusEnum.OPEN)
-                .inventoryEntity(inventoryWithItems)
-                .attachedToInventoryEntity(attachedInventory)
+                .inventory(inventoryWithItems)
+                .attachedToInventory(attachedInventory)
                 .removed(true)
                 .build();
 
@@ -535,8 +535,8 @@ class ContainerServiceTest {
                 .containerType(buildContainerType1())
                 .createdAt(Instant.EPOCH)
                 .status(ContainerStatusEnum.OPEN)
-                .inventoryEntity(inventoryWithContainers)
-                .attachedToInventoryEntity(attachedInventory)
+                .inventory(inventoryWithContainers)
+                .attachedToInventory(attachedInventory)
                 .build();
 
         String message = CONTAINER_NOT_EMPTY_EXCEPTION.formatted(ID_1);
@@ -588,7 +588,7 @@ class ContainerServiceTest {
     private InventoryEntity buildStorageLocationInventory() {
         StorageLocationEntity sl = buildStorageLocation();
         InventoryEntity inv = InventoryEntity.builder().id(ID_2).storageLocation(sl).build();
-        sl.setInventoryEntity(inv);
+        sl.setInventory(inv);
         return inv;
     }
 
@@ -599,7 +599,7 @@ class ContainerServiceTest {
     private InventoryEntity buildStorageLocationInventory2() {
         StorageLocationEntity sl = buildStorageLocation2();
         InventoryEntity inv = InventoryEntity.builder().id(ID_3).storageLocation(sl).build();
-        sl.setInventoryEntity(inv);
+        sl.setInventory(inv);
         return inv;
     }
 
@@ -610,7 +610,7 @@ class ContainerServiceTest {
     private InventoryEntity buildContainerInventory() {
         ContainerEntity parentContainer = buildParentContainer();
         InventoryEntity inv = InventoryEntity.builder().id(ID_3).container(parentContainer).build();
-        parentContainer.setInventoryEntity(inv);
+        parentContainer.setInventory(inv);
         return inv;
     }
 
@@ -621,7 +621,7 @@ class ContainerServiceTest {
                 .containerType(buildContainerType2())
                 .createdAt(Instant.EPOCH)
                 .status(ContainerStatusEnum.CLOSED)
-                .attachedToInventoryEntity(buildContainerInventory())
+                .attachedToInventory(buildContainerInventory())
                 .build();
     }
 
@@ -632,7 +632,7 @@ class ContainerServiceTest {
                 .containerType(buildContainerType1())
                 .createdAt(Instant.EPOCH)
                 .status(ContainerStatusEnum.OPEN)
-                .attachedToInventoryEntity(buildStorageLocationInventory())
+                .attachedToInventory(buildStorageLocationInventory())
                 .build();
     }
 
@@ -643,8 +643,8 @@ class ContainerServiceTest {
                 .containerType(buildContainerType2())
                 .createdAt(Instant.EPOCH)
                 .status(ContainerStatusEnum.OPEN)
-                .inventoryEntity(buildEmptyInventory())
-                .attachedToInventoryEntity(buildContainerInventory())
+                .inventory(buildEmptyInventory())
+                .attachedToInventory(buildContainerInventory())
                 .build();
     }
 
@@ -655,8 +655,8 @@ class ContainerServiceTest {
                 .containerType(buildContainerType1())
                 .createdAt(Instant.EPOCH)
                 .status(ContainerStatusEnum.OPEN)
-                .inventoryEntity(buildEmptyInventory())
-                .attachedToInventoryEntity(buildStorageLocationInventory())
+                .inventory(buildEmptyInventory())
+                .attachedToInventory(buildStorageLocationInventory())
                 .build();
     }
 
@@ -667,8 +667,8 @@ class ContainerServiceTest {
                 .containerType(buildContainerType1())
                 .createdAt(Instant.EPOCH)
                 .status(ContainerStatusEnum.OPEN)
-                .inventoryEntity(buildEmptyInventory())
-                .attachedToInventoryEntity(attachedToInventory)
+                .inventory(buildEmptyInventory())
+                .attachedToInventory(attachedToInventory)
                 .build();
     }
 }

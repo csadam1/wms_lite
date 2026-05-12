@@ -95,7 +95,7 @@ class StorageLocationServiceTest {
         // Arrange
         InventoryEntity inventory = InventoryEntity.builder().id(ID_1).build();
         StorageLocationEntity entity = new StorageLocationEntity(ID_1, STORAGE_LOCATION_1, DESCRIPTION_1, null);
-        entity.setInventoryEntity(inventory);
+        entity.setInventory(inventory);
         when(storageLocationRepository.findByName(STORAGE_LOCATION_1)).thenReturn(Optional.of(entity));
 
         // Act
@@ -193,7 +193,7 @@ class StorageLocationServiceTest {
         StorageLocationRequest request = new StorageLocationRequest(STORAGE_LOCATION_1, DESCRIPTION_1);
         InventoryEntity inventory = InventoryEntity.builder().id(ID_1).build();
         StorageLocationEntity savedEntity = new StorageLocationEntity(ID_1, STORAGE_LOCATION_1, DESCRIPTION_1, null);
-        savedEntity.setInventoryEntity(inventory);
+        savedEntity.setInventory(inventory);
         String message = SL_WITH_NAME_EXIST_EXCEPTION.formatted(STORAGE_LOCATION_1);
 
         doNothing().when(validator).validateUniqueness(eq(STORAGE_LOCATION_1), any(), anyString());

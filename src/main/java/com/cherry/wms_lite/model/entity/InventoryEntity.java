@@ -19,17 +19,17 @@ public class InventoryEntity {
     @Column(name = "id", nullable = false)
     private Long id;
 
-    @OneToMany(mappedBy = "attachedToInventoryEntity", cascade = CascadeType.ALL)
+    @OneToMany(mappedBy = "attachedToInventory", cascade = CascadeType.ALL)
     @Builder.Default
     private List<ItemEntity> items = new ArrayList<>();
 
-    @OneToMany(mappedBy = "attachedToInventoryEntity", cascade = CascadeType.ALL)
+    @OneToMany(mappedBy = "attachedToInventory", cascade = CascadeType.ALL)
     @Builder.Default
     private List<ContainerEntity> containers = new ArrayList<>();
 
-    @OneToOne(mappedBy = "inventoryEntity")
+    @OneToOne(mappedBy = "inventory")
     private StorageLocationEntity storageLocation;
 
-    @OneToOne(mappedBy = "inventoryEntity")
+    @OneToOne(mappedBy = "inventory")
     private ContainerEntity container;
 }

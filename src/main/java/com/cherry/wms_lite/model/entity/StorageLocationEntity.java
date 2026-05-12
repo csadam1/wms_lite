@@ -24,5 +24,5 @@ public class StorageLocationEntity {
 
     @OneToOne(optional = false, orphanRemoval = true)
     @JoinColumn(name = "inventory_id", nullable = false)
-    private InventoryEntity inventoryEntity;
+    private InventoryEntity inventory;
 }

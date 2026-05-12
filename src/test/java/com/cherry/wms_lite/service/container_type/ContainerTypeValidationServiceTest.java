@@ -33,7 +33,7 @@ class ContainerTypeValidationServiceTest {
         // Container is empty, total quantity is 0 which is equals to new capacity 0
         // Arrange
         InventoryEntity inventory = InventoryEntity.builder().id(ID_1).build();
-        ContainerEntity container = ContainerEntity.builder().id(ID_1).inventoryEntity(inventory).build();
+        ContainerEntity container = ContainerEntity.builder().id(ID_1).inventory(inventory).build();
 
         // Act and Assert
         assertTrue(
@@ -46,7 +46,7 @@ class ContainerTypeValidationServiceTest {
         // Arrange
         List<ItemEntity> items = get2ElemItemList();
         InventoryEntity inventory = InventoryEntity.builder().id(ID_1).items(items).build();
-        ContainerEntity container = ContainerEntity.builder().id(ID_1).inventoryEntity(inventory).build();
+        ContainerEntity container = ContainerEntity.builder().id(ID_1).inventory(inventory).build();
 
         // Act and Assert
         assertTrue(
@@ -59,7 +59,7 @@ class ContainerTypeValidationServiceTest {
         // Arrange
         List<ContainerEntity> containers = get2ElemContainerList();
         InventoryEntity inventory = InventoryEntity.builder().id(ID_1).containers(containers).build();
-        ContainerEntity container = ContainerEntity.builder().id(ID_1).inventoryEntity(inventory).build();
+        ContainerEntity container = ContainerEntity.builder().id(ID_1).inventory(inventory).build();
 
         // Act and Assert
         assertTrue(
@@ -73,7 +73,7 @@ class ContainerTypeValidationServiceTest {
         List<ContainerEntity> containers = get2ElemContainerList();
         List<ItemEntity> items = List.of(ItemEntity.builder().id(ID_1).quantity(QUANTITY_1).build());
         InventoryEntity inventory = InventoryEntity.builder().id(ID_1).items(items).containers(containers).build();
-        ContainerEntity container = ContainerEntity.builder().id(ID_1).inventoryEntity(inventory).build();
+        ContainerEntity container = ContainerEntity.builder().id(ID_1).inventory(inventory).build();
 
         // Act and Assert
         assertTrue(
@@ -87,7 +87,7 @@ class ContainerTypeValidationServiceTest {
         List<ContainerEntity> containers = get2ElemContainerList();
         List<ItemEntity> items = List.of(ItemEntity.builder().id(ID_1).quantity(QUANTITY_2).build());
         InventoryEntity inventory = InventoryEntity.builder().id(ID_1).items(items).containers(containers).build();
-        ContainerEntity container = ContainerEntity.builder().id(ID_1).inventoryEntity(inventory).build();
+        ContainerEntity container = ContainerEntity.builder().id(ID_1).inventory(inventory).build();
 
         // Act and Assert
         assertFalse(
@@ -102,7 +102,7 @@ class ContainerTypeValidationServiceTest {
         InventoryEntity inventory = InventoryEntity.builder().id(ID_1).storageLocation(storageLocation).build();
         ContainerTypeEntity containerType = ContainerTypeEntity.builder().id(ID_1).capacity(CAPACITY_1).build();
         ContainerEntity container =
-                ContainerEntity.builder().id(ID_1).attachedToInventoryEntity(inventory).containerType(containerType)
+                ContainerEntity.builder().id(ID_1).attachedToInventory(inventory).containerType(containerType)
                         .build();
 
         // Act and Assert
@@ -117,12 +117,12 @@ class ContainerTypeValidationServiceTest {
         InventoryEntity parentInventory = InventoryEntity.builder().id(ID_1).items(items).build();
         ContainerTypeEntity containerType1 = ContainerTypeEntity.builder().id(ID_1).capacity(CAPACITY_3).build();
         ContainerEntity parentContainer =
-                ContainerEntity.builder().id(ID_1).inventoryEntity(parentInventory).containerType(containerType1).build();
+                ContainerEntity.builder().id(ID_1).inventory(parentInventory).containerType(containerType1).build();
 
         InventoryEntity inventory = InventoryEntity.builder().id(ID_1).container(parentContainer).build();
         ContainerTypeEntity containerType2 = ContainerTypeEntity.builder().id(ID_1).capacity(CAPACITY_1).build();
         ContainerEntity container =
-                ContainerEntity.builder().id(ID_1).attachedToInventoryEntity(inventory).containerType(containerType2)
+                ContainerEntity.builder().id(ID_1).attachedToInventory(inventory).containerType(containerType2)
                         .build();
 
         // Act and Assert
@@ -137,12 +137,12 @@ class ContainerTypeValidationServiceTest {
         InventoryEntity parentInventory = InventoryEntity.builder().id(ID_1).containers(containers).build();
         ContainerTypeEntity containerType1 = ContainerTypeEntity.builder().id(ID_3).capacity(CAPACITY_1).build();
         ContainerEntity parentContainer =
-                ContainerEntity.builder().id(ID_1).inventoryEntity(parentInventory).containerType(containerType1).build();
+                ContainerEntity.builder().id(ID_1).inventory(parentInventory).containerType(containerType1).build();
 
         InventoryEntity inventory = InventoryEntity.builder().id(ID_1).container(parentContainer).build();
         ContainerTypeEntity containerType2 = ContainerTypeEntity.builder().id(ID_1).capacity(CAPACITY_1).build();
         ContainerEntity container =
-                ContainerEntity.builder().id(ID_1).attachedToInventoryEntity(inventory).containerType(containerType2)
+                ContainerEntity.builder().id(ID_1).attachedToInventory(inventory).containerType(containerType2)
                         .build();
 
         // Act and Assert
@@ -159,7 +159,7 @@ class ContainerTypeValidationServiceTest {
         InventoryEntity parentInventory = InventoryEntity.builder().id(ID_1).items(parentItems).build();
         ContainerTypeEntity containerType1 = ContainerTypeEntity.builder().id(ID_1).capacity(CAPACITY_3).build();
         ContainerEntity parentContainer =
-                ContainerEntity.builder().id(ID_1).inventoryEntity(parentInventory).containerType(containerType1).build();
+                ContainerEntity.builder().id(ID_1).inventory(parentInventory).containerType(containerType1).build();
         parentInventory.setContainer(parentContainer);
 
         List<ContainerEntity> containers = get2ElemContainerList();
@@ -168,8 +168,8 @@ class ContainerTypeValidationServiceTest {
         ContainerTypeEntity containerType2 = ContainerTypeEntity.builder().id(ID_1).capacity(CAPACITY_1).build();
         ContainerEntity container = ContainerEntity.builder()
                 .id(ID_1)
-                .attachedToInventoryEntity(parentInventory)
-                .inventoryEntity(inventory)
+                .attachedToInventory(parentInventory)
+                .inventory(inventory)
                 .containerType(containerType2)
                 .build();
 
@@ -187,7 +187,7 @@ class ContainerTypeValidationServiceTest {
         InventoryEntity parentInventory = InventoryEntity.builder().id(ID_1).items(parentItems).build();
         ContainerTypeEntity containerType1 = ContainerTypeEntity.builder().id(ID_1).capacity(CAPACITY_3).build();
         ContainerEntity parentContainer =
-                ContainerEntity.builder().id(ID_1).inventoryEntity(parentInventory).containerType(containerType1).build();
+                ContainerEntity.builder().id(ID_1).inventory(parentInventory).containerType(containerType1).build();
         parentInventory.setContainer(parentContainer);
 
         List<ContainerEntity> containers = get2ElemContainerList();
@@ -196,8 +196,8 @@ class ContainerTypeValidationServiceTest {
         ContainerTypeEntity containerType2 = ContainerTypeEntity.builder().id(ID_1).capacity(CAPACITY_1).build();
         ContainerEntity container = ContainerEntity.builder()
                 .id(ID_1)
-                .attachedToInventoryEntity(parentInventory)
-                .inventoryEntity(inventory)
+                .attachedToInventory(parentInventory)
+                .inventory(inventory)
                 .containerType(containerType2)
                 .build();
 

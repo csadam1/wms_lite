@@ -19,7 +19,7 @@ public class StorageLocationMapper {
         StorageLocationEntity entity = new StorageLocationEntity();
         entity.setName(request.name());
         entity.setDescription(request.description());
-        entity.setInventoryEntity(inventory);
+        entity.setInventory(inventory);
         return entity;
     }
 }

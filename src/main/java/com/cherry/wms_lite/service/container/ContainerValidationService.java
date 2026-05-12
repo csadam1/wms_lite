@@ -19,7 +19,7 @@ public class ContainerValidationService {
     private final MessageService messageService;
 
     public void validateIsContainerFitIntoInventory(final ContainerEntity container) {
-        InventoryEntity containerInventory = container.getAttachedToInventoryEntity();
+        InventoryEntity containerInventory = container.getAttachedToInventory();
         if (validator.isNullOrEmpty(containerInventory)) {
             throw new IllegalStateException(
                     messageService.getMessage(ExceptionMessageKeys.CONTAINER_IS_NOT_ANY_IN_INVENTORY));
@@ -62,7 +62,7 @@ public class ContainerValidationService {
     }
 
     private BigDecimal getContainerCurrentQuantity(final ContainerEntity container) {
-        InventoryEntity containerInventory = container.getInventoryEntity();
+        InventoryEntity containerInventory = container.getInventory();
         return getCurrentItemQuantity(containerInventory)
                 .add(getCurrentContainerQuantity(containerInventory));
     }

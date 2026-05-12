@@ -37,9 +37,9 @@ public class ContainerEntity {
 
     @OneToOne(optional = false, orphanRemoval = true)
     @JoinColumn(name = "inventory_id", nullable = false)
-    private InventoryEntity inventoryEntity;
+    private InventoryEntity inventory;
 
     @ManyToOne(optional = false)
     @JoinColumn(name = "attached_to_inventory_id", nullable = false)
-    private InventoryEntity attachedToInventoryEntity;
+    private InventoryEntity attachedToInventory;
 }

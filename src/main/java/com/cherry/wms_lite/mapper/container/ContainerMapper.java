@@ -31,9 +31,9 @@ public class ContainerMapper {
 
     private String getLocationName(final ContainerEntity container) {
         try {
-            return container.getAttachedToInventoryEntity().getStorageLocation() != null
-                    ? container.getAttachedToInventoryEntity().getStorageLocation().getName()
-                    : container.getAttachedToInventoryEntity().getContainer().getSerialNumber();
+            return container.getAttachedToInventory().getStorageLocation() != null
+                    ? container.getAttachedToInventory().getStorageLocation().getName()
+                    : container.getAttachedToInventory().getContainer().getSerialNumber();
         } catch (NullPointerException e) {
             throw new IllegalStateException(
                     messageService.getMessage(ExceptionMessageKeys.CONTAINER_DOES_NOT_HAVE_VALID_STORAGE,
@@ -47,8 +47,8 @@ public class ContainerMapper {
         ContainerEntity container = new ContainerEntity();
         container.setSerialNumber(request.serialNumber());
         container.setContainerType(containerType);
-        container.setInventoryEntity(inventory);
-        container.setAttachedToInventoryEntity(attachedToInventory);
+        container.setInventory(inventory);
+        container.setAttachedToInventory(attachedToInventory);
         container.setStatus(request.status());
         container.setCreatedAt(Instant.now());
         container.setRemoved(false);

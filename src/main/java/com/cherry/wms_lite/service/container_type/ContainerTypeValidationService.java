@@ -23,11 +23,11 @@ public class ContainerTypeValidationService {
     }
 
     public Boolean containerFitsIntoLocation(final ContainerEntity container, final BigDecimal newCapacity) {
-        if (container.getAttachedToInventoryEntity().getStorageLocation() != null) {
+        if (container.getAttachedToInventory().getStorageLocation() != null) {
             return true;
         }
 
-        ContainerEntity parentContainer = container.getAttachedToInventoryEntity().getContainer();
+        ContainerEntity parentContainer = container.getAttachedToInventory().getContainer();
         BigDecimal parentContainerCapacity = parentContainer.getContainerType().getCapacity();
         return getCurrentQuantityForContainer(parentContainer, container.getContainerType(), newCapacity)
                 .compareTo(parentContainerCapacity) <= 0;
@@ -37,10 +37,10 @@ public class ContainerTypeValidationService {
                                                       final ContainerTypeEntity childContainerType,
                                                       final BigDecimal newCapacity)
     {
-        BigDecimal currentItemQuantity = getCurrentItemQuantity(container.getInventoryEntity());
+        BigDecimal currentItemQuantity = getCurrentItemQuantity(container.getInventory());
         BigDecimal currentContainerQuantity = (childContainerType != null && newCapacity != null)
-                ? getCurrentContainerQuantity(container.getInventoryEntity(), childContainerType, newCapacity)
-                : getCurrentContainerQuantity(container.getInventoryEntity());
+                ? getCurrentContainerQuantity(container.getInventory(), childContainerType, newCapacity)
+                : getCurrentContainerQuantity(container.getInventory());
 
         return currentContainerQuantity.add(currentItemQuantity);
     }

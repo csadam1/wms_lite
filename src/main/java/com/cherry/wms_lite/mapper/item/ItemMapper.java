@@ -25,7 +25,7 @@ public class ItemMapper {
 
     private String getStorageName(final ItemEntity item) {
         try {
-            InventoryEntity inventory = item.getAttachedToInventoryEntity();
+            InventoryEntity inventory = item.getAttachedToInventory();
             return inventory.getStorageLocation() != null
                     ? inventory.getStorageLocation().getName()
                     : inventory.getContainer().getSerialNumber();
@@ -40,7 +40,7 @@ public class ItemMapper {
         ItemEntity entity = new ItemEntity();
         entity.setSerialNumber(request.serialNumber());
         entity.setMaterial(request.material());
-        entity.setAttachedToInventoryEntity(attachedToInventory);
+        entity.setAttachedToInventory(attachedToInventory);
         entity.setQuantity(request.quantity());
         return entity;
     }

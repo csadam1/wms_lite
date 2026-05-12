@@ -76,7 +76,7 @@ public class ItemService {
         try {
             return locationTypeEnum.equals(LocationTypeEnum.STORAGE_LOCATION)
                     ? storageLocationService.getStorageLocationInventoryByName(locationName)
-                    : getContainerEntityByName(locationName).getInventoryEntity();
+                    : getContainerEntityByName(locationName).getInventory();
         } catch (NullPointerException e) {
             throw new EntityNotFoundException(
                     messageService.getMessage(ExceptionMessageKeys.LOCATION_NAME_DOES_NOT_EXIST, locationName));

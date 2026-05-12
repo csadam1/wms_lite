@@ -35,7 +35,7 @@ public class StorageLocationService {
     }
 
     public InventoryEntity getStorageLocationInventoryByName(final String name) {
-        return getStorageLocationByName(name).getInventoryEntity();
+        return getStorageLocationByName(name).getInventory();
     }
 
     public StorageLocationResponse getStorageLocationById(final Long storageLocationId) {

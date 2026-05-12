@@ -113,7 +113,7 @@ public class ContainerService {
 
     private void changeLocationIfProvided(final ContainerEntity containerEntity, final ContainerRequest request) {
         if (!validator.isNullOrEmpty(request.locationName()) && !validator.isNullOrEmpty(request.locationTypeEnum())) {
-            containerEntity.setAttachedToInventoryEntity(
+            containerEntity.setAttachedToInventory(
                     getContainerAttachedToInventory(request.locationName(), request.locationTypeEnum()));
         }
     }
@@ -138,12 +138,12 @@ public class ContainerService {
 
     private InventoryEntity getContainerInventory(final String serialNumber) {
         return getContainerEntityByName(serialNumber)
-                .getInventoryEntity();
+                .getInventory();
     }
 
     private InventoryEntity getContainerInventoryById(final Long containerId) {
         return getContainerEntityById(containerId)
-                .getInventoryEntity();
+                .getInventory();
     }
 
     private InventoryEntity getContainerAttachedToInventory(final String locationName,

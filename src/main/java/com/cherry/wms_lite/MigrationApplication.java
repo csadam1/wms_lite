@@ -18,40 +18,40 @@ import java.time.Instant;
 public class MigrationApplication {
 
     @Bean
-    CommandLineRunner initData(ContainerTypeRepository typeRepo,
-                               ContainerRepository containerRepo,
-                               InventoryRepository inventoryRepo,
-                               StorageLocationRepository slRepo,
-                               ItemRepository itemRepo) {
+    CommandLineRunner initData(ContainerTypeRepository containerTypeRepository,
+                               ContainerRepository containerRepository,
+                               InventoryRepository inventoryRepository,
+                               StorageLocationRepository storageLocationRepository,
+                               ItemRepository itemRepository) {
         return args -> {
             InventoryEntity sl1InventoryEntity = getInventoryEntity();
-            inventoryRepo.save(sl1InventoryEntity);
+            inventoryRepository.save(sl1InventoryEntity);
             StorageLocationEntity sl1 = getMainSlEntity(sl1InventoryEntity);
-            slRepo.save(sl1);
+            storageLocationRepository.save(sl1);
 
             ContainerTypeEntity box = getBoxEntity();
-            box = typeRepo.save(box);
+            box = containerTypeRepository.save(box);
             InventoryEntity box001Inventory = getInventoryEntity();
-            inventoryRepo.save(box001Inventory);
+            inventoryRepository.save(box001Inventory);
             ContainerEntity box001 = getContainerEntity("BOX-001", box, box001Inventory, sl1InventoryEntity);
-            containerRepo.save(box001);
+            containerRepository.save(box001);
 
             ContainerTypeEntity crate = getCrateEntity();
-            crate = typeRepo.save(crate);
+            crate = containerTypeRepository.save(crate);
             InventoryEntity crt999Inventory = getInventoryEntity();
-            inventoryRepo.save(crt999Inventory);
+            inventoryRepository.save(crt999Inventory);
             ContainerEntity crt999 = getContainerEntity("CRT-999", crate, crt999Inventory, sl1InventoryEntity);
-            containerRepo.save(crt999);
+            containerRepository.save(crt999);
 
             InventoryEntity sl2InventoryEntity = getInventoryEntity();
-            inventoryRepo.save(sl2InventoryEntity);
+            inventoryRepository.save(sl2InventoryEntity);
             StorageLocationEntity sl2 = get0010SlEntity(sl2InventoryEntity);
-            slRepo.save(sl2);
+            storageLocationRepository.save(sl2);
 
             ItemEntity nail100qty = get100NailEntity(crt999Inventory);
-            itemRepo.save(nail100qty);
+            itemRepository.save(nail100qty);
             ItemEntity steeringWheel = getSteeringWheelItem(sl2InventoryEntity);
-            itemRepo.save(steeringWheel);
+            itemRepository.save(steeringWheel);
         };
     }
 
@@ -59,7 +59,7 @@ public class MigrationApplication {
         return ItemEntity.builder()
                 .serialNumber("TK-NAIL-PACK-12345")
                 .material("TK-NAIL-0002")
-                .attachedToInventoryEntity(inventoryEntity)
+                .attachedToInventory(inventoryEntity)
                 .quantity(BigDecimal.valueOf(100))
                 .build();
     }
@@ -68,7 +68,7 @@ public class MigrationApplication {
         return ItemEntity.builder()
                 .serialNumber("TK-STW-12345")
                 .material("TK-ST-WHEEL-0001")
-                .attachedToInventoryEntity(inventoryEntity)
+                .attachedToInventory(inventoryEntity)
                 .quantity(BigDecimal.valueOf(1))
                 .build();
     }
@@ -85,8 +85,8 @@ public class MigrationApplication {
                 .builder()
                 .serialNumber(name)
                 .containerType(crate)
-                .inventoryEntity(inventoryEntity)
-                .attachedToInventoryEntity(attachedToInventoryEntity)
+                .inventory(inventoryEntity)
+                .attachedToInventory(attachedToInventoryEntity)
                 .createdAt(Instant.now())
                 .status(ContainerStatusEnum.CLOSED)
                 .removed(false)
@@ -98,7 +98,7 @@ public class MigrationApplication {
                 .builder()
                 .name("Main Warehouse")
                 .description("Primary storage location for all inventory")
-                .inventoryEntity(inventoryEntity)
+                .inventory(inventoryEntity)
                 .build();
     }
 
@@ -107,7 +107,7 @@ public class MigrationApplication {
                 .builder()
                 .name("Factory Floor Storage 0010")
                 .description("Factory Floor Storage 0010")
-                .inventoryEntity(inventoryEntity)
+                .inventory(inventoryEntity)
                 .build();
     }
 
