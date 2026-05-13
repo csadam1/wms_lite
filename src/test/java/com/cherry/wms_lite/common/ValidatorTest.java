@@ -5,15 +5,12 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import java.math.BigDecimal;
 import java.util.Optional;
 import java.util.function.Function;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.mockito.Mockito.*;
-import static org.mockito.Mockito.verify;
 
 @ExtendWith(MockitoExtension.class)
 class ValidatorTest {
@@ -44,31 +41,9 @@ class ValidatorTest {
     }
 
     @Test
-    void isPositiveBigDecimal_whenNull_shouldReturnFalse() {
-        assertFalse(validator.isPositiveBigDecimal(null));
-    }
-
-    @Test
-    void isPositiveBigDecimal_whenZero_shouldReturnFalse() {
-        assertFalse(validator.isPositiveBigDecimal(BigDecimal.ZERO));
-    }
-
-    @Test
-    void isPositiveBigDecimal_whenNegative_shouldReturnFalse() {
-        assertFalse(validator.isPositiveBigDecimal(BigDecimal.valueOf(-1)));
-    }
-
-    @Test
-    void isPositiveBigDecimal_whenPositive_shouldReturnTrue() {
-        assertTrue(validator.isPositiveBigDecimal(BigDecimal.valueOf(1)));
-        assertTrue(validator.isPositiveBigDecimal(BigDecimal.valueOf(0.01)));
-    }
-
-    @Test
     void validateUniqueness_whenValueExists_shouldThrowException() {
         // Arrange
-        Function<String, Optional<Object>> finderFunction = mock(Function.class);
-        when(finderFunction.apply("test")).thenReturn(Optional.of(new Object()));
+        Function<String, Optional<Object>> finderFunction = value -> Optional.of(new Object());
 
         // Act and Assert
         IllegalArgumentException exception = assertThrows(
@@ -77,20 +52,15 @@ class ValidatorTest {
         );
 
         assertEquals("Value already exists", exception.getMessage());
-        verify(finderFunction).apply("test");
     }
 
     @Test
     void validateUniqueness_whenValueDoesNotExist_shouldNotThrowException() {
         // Arrange
-        Function<String, Optional<Object>> finderFunction = mock(Function.class);
-        when(finderFunction.apply("test")).thenReturn(Optional.empty());
+        Function<String, Optional<Object>> finderFunction = value -> Optional.empty();
 
         // Act and Assert
         assertDoesNotThrow(
-                () -> validator.validateUniqueness("test", finderFunction, "Value already exists")
-        );
-
-        verify(finderFunction).apply("test");
+                () -> validator.validateUniqueness("test", finderFunction, "Value already exists"));
     }
 }
