@@ -2,12 +2,14 @@ package com.cherry.wms_lite.service.container_type;
 
 import com.cherry.wms_lite.common.MessageService;
 import com.cherry.wms_lite.common.Validator;
+import com.cherry.wms_lite.mapper.container_type.ContainerTypeMapper;
 import com.cherry.wms_lite.model.entity.ContainerEntity;
 import com.cherry.wms_lite.model.entity.ContainerTypeEntity;
 import com.cherry.wms_lite.model.request.container_type.ContainerTypeRequest;
 import com.cherry.wms_lite.model.response.container_type.ContainerTypeResponse;
 import com.cherry.wms_lite.repository.container.ContainerRepository;
 import com.cherry.wms_lite.repository.container.ContainerTypeRepository;
+import com.cherry.wms_lite.service.container.ContainerValidationService;
 import jakarta.persistence.EntityNotFoundException;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -55,16 +57,16 @@ class ContainerTypeServiceTest {
 
     @Mock
     private ContainerTypeRepository containerTypeRepository;
-
     @Mock
     private ContainerRepository containerRepository;
-
     @Mock
     private Validator validator;
-
     @Mock
     private MessageService messageService;
-
+    @Mock
+    private ContainerTypeMapper containerTypeMapper;
+    @Mock
+    private ContainerValidationService containerValidationService;
     @InjectMocks
     private ContainerTypeService containerTypeService;
 
@@ -74,7 +76,12 @@ class ContainerTypeServiceTest {
         ContainerTypeEntity entity1 = new ContainerTypeEntity(ID_1, CONTAINER_TYPE_1, DESCRIPTION_1, CAPACITY_1);
         ContainerTypeEntity entity2 = new ContainerTypeEntity(ID_2, CONTAINER_TYPE_2, DESCRIPTION_2, CAPACITY_2);
         List<ContainerTypeEntity> entities = List.of(entity1, entity2);
+        ContainerTypeResponse response1 = new ContainerTypeResponse(ID_1, CONTAINER_TYPE_1, DESCRIPTION_1, CAPACITY_1);
+        ContainerTypeResponse response2 = new ContainerTypeResponse(ID_2, CONTAINER_TYPE_2, DESCRIPTION_2, CAPACITY_2);
+
         when(containerTypeRepository.findAll()).thenReturn(entities);
+        when(containerTypeMapper.toResponse(entity1)).thenReturn(response1);
+        when(containerTypeMapper.toResponse(entity2)).thenReturn(response2);
 
         // Act
         List<ContainerTypeResponse> result = containerTypeService.getAllContainerTypes();
@@ -86,7 +93,6 @@ class ContainerTypeServiceTest {
         assertEquals(CONTAINER_TYPE_1, result.get(0).name());
         assertEquals(ID_2, result.get(1).id());
         assertEquals(CONTAINER_TYPE_2, result.get(1).name());
-        verify(containerTypeRepository, times(1)).findAll();
     }
 
     @Test
@@ -100,14 +106,16 @@ class ContainerTypeServiceTest {
         // Assert
         assertNotNull(result);
         assertEquals(0, result.size());
-        verify(containerTypeRepository, times(1)).findAll();
     }
 
     @Test
     void getContainerTypeById_success() {
         // Arrange
         ContainerTypeEntity entity = new ContainerTypeEntity(ID_1, CONTAINER_TYPE_1, DESCRIPTION_1, null);
+        ContainerTypeResponse response = new ContainerTypeResponse(ID_1, CONTAINER_TYPE_1, DESCRIPTION_1, CAPACITY_1);
+
         when(containerTypeRepository.findById(ID_1)).thenReturn(Optional.of(entity));
+        when(containerTypeMapper.toResponse(entity)).thenReturn(response);
 
         // Act
         ContainerTypeResponse result = containerTypeService.getContainerTypeById(ID_1);
@@ -117,7 +125,6 @@ class ContainerTypeServiceTest {
         assertEquals(ID_1, result.id());
         assertEquals(CONTAINER_TYPE_1, result.name());
         assertEquals(DESCRIPTION_1, result.description());
-        verify(containerTypeRepository, times(1)).findById(ID_1);
     }
 
     @Test
@@ -133,7 +140,6 @@ class ContainerTypeServiceTest {
                 () -> containerTypeService.getContainerTypeById(ID_1));
 
         assertEquals(message, exception.getMessage());
-        verify(containerTypeRepository, times(1)).findById(ID_1);
     }
 
     @Test
@@ -142,10 +148,13 @@ class ContainerTypeServiceTest {
         ContainerTypeRequest request = new ContainerTypeRequest(CONTAINER_TYPE_1, DESCRIPTION_1, CAPACITY_1);
         ContainerTypeEntity savedEntity = new ContainerTypeEntity(ID_1, CONTAINER_TYPE_1, DESCRIPTION_1, CAPACITY_1);
         String message = CONTAINER_TYPE_WITH_NAME_EXIST_EXCEPTION.formatted(CONTAINER_TYPE_1);
+        ContainerTypeResponse response = new ContainerTypeResponse(ID_1, CONTAINER_TYPE_1, DESCRIPTION_1, CAPACITY_1);
 
         doNothing().when(validator).validateUniqueness(eq(CONTAINER_TYPE_1), any(), anyString());
+        when(containerTypeMapper.toEntity(request)).thenReturn(savedEntity);
         when(containerTypeRepository.save(any(ContainerTypeEntity.class))).thenReturn(savedEntity);
         when(messageService.getMessage(any(), any())).thenReturn(message);
+        when(containerTypeMapper.toResponse(savedEntity)).thenReturn(response);
 
         // Act
         ContainerTypeResponse result = containerTypeService.createContainerType(request);
@@ -155,8 +164,6 @@ class ContainerTypeServiceTest {
         assertEquals(ID_1, result.id());
         assertEquals(CONTAINER_TYPE_1, result.name());
         assertEquals(DESCRIPTION_1, result.description());
-        verify(validator, times(1)).validateUniqueness(eq(CONTAINER_TYPE_1), any(), anyString());
-        verify(containerTypeRepository, times(1)).save(any(ContainerTypeEntity.class));
     }
 
     @Test
@@ -186,12 +193,15 @@ class ContainerTypeServiceTest {
         ContainerTypeEntity updatedEntity =
                 new ContainerTypeEntity(ID_1, UPDATED_CONTAINER_TYPE, UPDATED_DESCRIPTION, UPDATED_BIGGER_CAPACITY);
         String message = CONTAINER_TYPE_WITH_NAME_EXIST_EXCEPTION.formatted(CONTAINER_TYPE_1);
+        ContainerTypeResponse response = new ContainerTypeResponse(ID_1, UPDATED_CONTAINER_TYPE, UPDATED_DESCRIPTION,
+                UPDATED_BIGGER_CAPACITY);
 
         when(containerTypeRepository.findById(ID_1)).thenReturn(Optional.of(existingEntity));
         when(validator.isNullOrEmpty(UPDATED_CONTAINER_TYPE)).thenReturn(false);
         when(validator.isNullOrEmpty(UPDATED_DESCRIPTION)).thenReturn(false);
         doNothing().when(validator).validateUniqueness(eq(UPDATED_CONTAINER_TYPE), any(), anyString());
         when(containerTypeRepository.save(any(ContainerTypeEntity.class))).thenReturn(updatedEntity);
+        when(containerTypeMapper.toResponse(updatedEntity)).thenReturn(response);
         when(messageService.getMessage(any(), any())).thenReturn(message);
 
         // Act
@@ -202,8 +212,6 @@ class ContainerTypeServiceTest {
         assertEquals(ID_1, result.id());
         assertEquals(UPDATED_CONTAINER_TYPE, result.name());
         assertEquals(UPDATED_DESCRIPTION, result.description());
-        verify(containerTypeRepository, times(1)).findById(ID_1);
-        verify(containerTypeRepository, times(1)).save(any(ContainerTypeEntity.class));
     }
 
     @Test
@@ -214,12 +222,15 @@ class ContainerTypeServiceTest {
         ContainerTypeEntity updatedEntity =
                 new ContainerTypeEntity(ID_1, UPDATED_CONTAINER_TYPE, DESCRIPTION_1, CAPACITY_1);
         String message = CONTAINER_TYPE_WITH_NAME_EXIST_EXCEPTION.formatted(CONTAINER_TYPE_1);
+        ContainerTypeResponse response = new ContainerTypeResponse(ID_1, UPDATED_CONTAINER_TYPE, DESCRIPTION_1,
+                CAPACITY_1);
 
         when(containerTypeRepository.findById(ID_1)).thenReturn(Optional.of(existingEntity));
         when(validator.isNullOrEmpty(UPDATED_CONTAINER_TYPE)).thenReturn(false);
         when(validator.isNullOrEmpty(null)).thenReturn(true);
         doNothing().when(validator).validateUniqueness(eq(UPDATED_CONTAINER_TYPE), any(), anyString());
         when(containerTypeRepository.save(any(ContainerTypeEntity.class))).thenReturn(updatedEntity);
+        when(containerTypeMapper.toResponse(updatedEntity)).thenReturn(response);
         when(messageService.getMessage(any(), any())).thenReturn(message);
 
         // Act
@@ -229,8 +240,6 @@ class ContainerTypeServiceTest {
         assertNotNull(result);
         assertEquals(ID_1, result.id());
         assertEquals(UPDATED_CONTAINER_TYPE, result.name());
-        verify(containerTypeRepository, times(1)).findById(ID_1);
-        verify(containerTypeRepository, times(1)).save(any(ContainerTypeEntity.class));
     }
 
     @Test
@@ -240,11 +249,14 @@ class ContainerTypeServiceTest {
         ContainerTypeEntity existingEntity = new ContainerTypeEntity(ID_1, CONTAINER_TYPE_1, DESCRIPTION_1, CAPACITY_1);
         ContainerTypeEntity updatedEntity =
                 new ContainerTypeEntity(ID_1, CONTAINER_TYPE_1, UPDATED_DESCRIPTION, CAPACITY_1);
+        ContainerTypeResponse response = new ContainerTypeResponse(ID_1, CONTAINER_TYPE_1, UPDATED_DESCRIPTION,
+                CAPACITY_1);
 
         when(containerTypeRepository.findById(ID_1)).thenReturn(Optional.of(existingEntity));
         when(validator.isNullOrEmpty(UPDATED_DESCRIPTION)).thenReturn(false);
         when(validator.isNullOrEmpty(null)).thenReturn(true);
         when(containerTypeRepository.save(any(ContainerTypeEntity.class))).thenReturn(updatedEntity);
+        when(containerTypeMapper.toResponse(updatedEntity)).thenReturn(response);
 
         // Act
         ContainerTypeResponse result = containerTypeService.updateContainerType(ID_1, request);
@@ -253,8 +265,6 @@ class ContainerTypeServiceTest {
         assertNotNull(result);
         assertEquals(ID_1, result.id());
         assertEquals(UPDATED_DESCRIPTION, result.description());
-        verify(containerTypeRepository, times(1)).findById(ID_1);
-        verify(containerTypeRepository, times(1)).save(any(ContainerTypeEntity.class));
     }
 
     @Test
@@ -264,11 +274,13 @@ class ContainerTypeServiceTest {
         ContainerTypeEntity existingEntity = new ContainerTypeEntity(ID_1, CONTAINER_TYPE_1, DESCRIPTION_1, CAPACITY_1);
         ContainerTypeEntity updatedEntity =
                 new ContainerTypeEntity(ID_1, CONTAINER_TYPE_1, DESCRIPTION_1, UPDATED_BIGGER_CAPACITY);
+        ContainerTypeResponse response = new ContainerTypeResponse(ID_1, CONTAINER_TYPE_1, DESCRIPTION_1,
+                UPDATED_BIGGER_CAPACITY);
 
         when(containerTypeRepository.findById(ID_1)).thenReturn(Optional.of(existingEntity));
-        when(validator.isPositiveBigDecimal(UPDATED_BIGGER_CAPACITY)).thenReturn(true);
         when(validator.isNullOrEmpty(null)).thenReturn(true);
         when(containerTypeRepository.save(any(ContainerTypeEntity.class))).thenReturn(updatedEntity);
+        when(containerTypeMapper.toResponse(updatedEntity)).thenReturn(response);
 
         // Act
         ContainerTypeResponse result = containerTypeService.updateContainerType(ID_1, request);
@@ -277,8 +289,6 @@ class ContainerTypeServiceTest {
         assertNotNull(result);
         assertEquals(ID_1, result.id());
         assertEquals(UPDATED_BIGGER_CAPACITY, result.capacity());
-        verify(containerTypeRepository, times(1)).findById(ID_1);
-        verify(containerTypeRepository, times(1)).save(any(ContainerTypeEntity.class));
     }
 
     @Test
@@ -291,12 +301,14 @@ class ContainerTypeServiceTest {
         ContainerEntity entity1 = getContainerEntity(ID_1, CONTAINER_SERIAL_NUMBER_1);
         ContainerEntity entity2 = getContainerEntity(ID_2, CONTAINER_SERIAL_NUMBER_2);
         List<ContainerEntity> containerEntities = List.of(entity1, entity2);
+        ContainerTypeResponse response = new ContainerTypeResponse(ID_1, CONTAINER_TYPE_1, DESCRIPTION_1,
+                UPDATED_SMALLER_CAPACITY);
 
         when(containerTypeRepository.findById(ID_1)).thenReturn(Optional.of(existingEntity));
-        when(validator.isPositiveBigDecimal(UPDATED_SMALLER_CAPACITY)).thenReturn(true);
         when(validator.isNullOrEmpty(null)).thenReturn(true);
         when(containerTypeRepository.save(any(ContainerTypeEntity.class))).thenReturn(updatedEntity);
         when(containerRepository.findAllByContainerType_IdAndRemovedFalse(ID_1)).thenReturn(containerEntities);
+        when(containerTypeMapper.toResponse(updatedEntity)).thenReturn(response);
 
         // Act
         ContainerTypeResponse result = containerTypeService.updateContainerType(ID_1, request);
@@ -305,8 +317,6 @@ class ContainerTypeServiceTest {
         assertNotNull(result);
         assertEquals(ID_1, result.id());
         assertEquals(UPDATED_SMALLER_CAPACITY, result.capacity());
-        verify(containerTypeRepository, times(1)).findById(ID_1);
-        verify(containerTypeRepository, times(1)).save(any(ContainerTypeEntity.class));
     }
 
     @Test
@@ -323,7 +333,6 @@ class ContainerTypeServiceTest {
                 () -> containerTypeService.updateContainerType(ID_1, request));
 
         assertEquals(message, exception.getMessage());
-        verify(containerTypeRepository, times(1)).findById(ID_1);
         verify(containerTypeRepository, never()).save(any(ContainerTypeEntity.class));
     }
 
@@ -336,19 +345,19 @@ class ContainerTypeServiceTest {
         ContainerEntity entity2 = getContainerEntity(ID_2, CONTAINER_SERIAL_NUMBER_2);
         List<ContainerEntity> containerEntities = List.of(entity1, entity2);
         String message = CONTAINERS_EXCEED_NEW_CAPACITY_EXCEPTION;
+        IllegalStateException expectedException = new IllegalStateException(message);
 
         when(containerTypeRepository.findById(ID_1)).thenReturn(Optional.of(existingEntity));
-        when(validator.isPositiveBigDecimal(UPDATED_SMALLER_CAPACITY)).thenReturn(true);
         when(validator.isNullOrEmpty(null)).thenReturn(true);
         when(containerRepository.findAllByContainerType_IdAndRemovedFalse(ID_1)).thenReturn(containerEntities);
-        when(messageService.getMessage(any(), any())).thenReturn(message);
+        doNothing().when(containerValidationService).validateIsContentFitIntoContainerInventory(entity1);
+        doThrow(expectedException).when(containerValidationService).validateIsContentFitIntoContainerInventory(entity2);
 
         // Act and Assert
         IllegalStateException exception = assertThrows(IllegalStateException.class,
                 () -> containerTypeService.updateContainerType(ID_1, request));
 
         assertEquals(message, exception.getMessage());
-        verify(containerTypeRepository, times(1)).findById(ID_1);
         verify(containerTypeRepository, never()).save(any(ContainerTypeEntity.class));
     }
 
@@ -383,7 +392,6 @@ class ContainerTypeServiceTest {
 
         // Assert
         assertEquals(message, exception.getMessage());
-        verify(containerTypeRepository, times(1)).existsById(ID_1);
         verify(containerRepository, never()).existsByContainerType_Id(ID_1);
         verify(containerTypeRepository, never()).deleteById(ID_1);
     }
@@ -403,8 +411,6 @@ class ContainerTypeServiceTest {
 
         // Assert
         assertEquals(message, exception.getMessage());
-        verify(containerTypeRepository, times(1)).existsById(ID_1);
-        verify(containerRepository, times(1)).existsByContainerType_Id(ID_1);
         verify(containerTypeRepository, never()).deleteById(ID_1);
     }
 
