@@ -317,6 +317,31 @@ class ContainerServiceTest {
     }
 
     @Test
+    void updateContainer_changeSerialNumber_valid_success() {
+        // Arrange
+        ContainerRequest request = new ContainerRequest(SERIAL_NUMBER_2, null, null, null, null);
+
+        ContainerEntity container = buildContainer1WithEmptyInventory();
+        ContainerResponse response = buildContainerResponse2();
+
+        when(containerRepository.findByIdAndRemovedFalse(ID_1)).thenReturn(Optional.of(container));
+        doNothing().when(validator).validateUniqueness(eq(SERIAL_NUMBER_2), any(), any());
+        when(validator.isNullOrEmpty(null)).thenReturn(true);
+        when(validator.isNullOrEmpty(SERIAL_NUMBER_2)).thenReturn(false);
+        doNothing().when(containerValidationService).validateIsContainerFitIntoInventory(container);
+        doNothing().when(containerValidationService).validateIsContentFitIntoContainerInventory(container);
+        when(containerRepository.save(container)).thenReturn(container);
+        when(containerMapper.toResponse(container)).thenReturn(response);
+
+        // Act
+        ContainerResponse result = containerService.updateContainer(ID_1, request);
+
+        // Assert
+        assertEquals(SERIAL_NUMBER_2, result.containerSerialNumber());
+        assertEquals(response, result);
+    }
+
+    @Test
     void updateContainer_changeStatus_success() {
         // Arrange
         ContainerRequest request = new ContainerRequest(
