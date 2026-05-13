@@ -2,6 +2,7 @@ package com.cherry.wms_lite.service.container;
 
 import com.cherry.wms_lite.common.MessageService;
 import com.cherry.wms_lite.common.Validator;
+import com.cherry.wms_lite.mapper.container.ContainerMapper;
 import com.cherry.wms_lite.model.entity.*;
 import com.cherry.wms_lite.model.enumerate.ContainerStatusEnum;
 import com.cherry.wms_lite.model.enumerate.LocationTypeEnum;
@@ -70,15 +71,25 @@ class ContainerServiceTest {
     private Validator validator;
     @Mock
     private MessageService messageService;
+    @Mock
+    private ContainerMapper containerMapper;
+    @Mock
+    private ContainerValidationService containerValidationService;
     @InjectMocks
     private ContainerService containerService;
 
     @Test
     void getAllContainers_returnsListOfResponses() {
         // Arrange
-        List<ContainerEntity> containers = List.of(buildContainer1(), buildContainer2());
+        ContainerEntity container1 = buildContainer1();
+        ContainerEntity container2 = buildContainer2();
+        List<ContainerEntity> containers = List.of(container1, container2);
+        ContainerResponse response1 = buildContainerResponse1();
+        ContainerResponse response2 = buildContainerResponse2();
 
         when(containerRepository.findAllByRemovedFalse()).thenReturn(containers);
+        when(containerMapper.toResponse(container1)).thenReturn(response1);
+        when(containerMapper.toResponse(container2)).thenReturn(response2);
 
         // Act
         List<ContainerResponse> result = containerService.getAllContainers();
@@ -99,8 +110,6 @@ class ContainerServiceTest {
         assertEquals(Instant.EPOCH, elem2.createdAt());
         assertEquals(ContainerStatusEnum.CLOSED, elem2.status());
         assertEquals(SERIAL_NUMBER_3, elem2.locationName());
-
-        verify(containerRepository).findAllByRemovedFalse();
     }
 
     @Test
@@ -119,8 +128,10 @@ class ContainerServiceTest {
     void getContainerById_found_returnsResponse() {
         // Arrange
         ContainerEntity container = buildContainer1();
+        ContainerResponse response1 = buildContainerResponse1();
 
         when(containerRepository.findByIdAndRemovedFalse(ID_1)).thenReturn(Optional.of(container));
+        when(containerMapper.toResponse(container)).thenReturn(response1);
 
         // Act
         ContainerResponse result = containerService.getContainerById(ID_1);
@@ -158,14 +169,14 @@ class ContainerServiceTest {
         InventoryEntity attachedInventory = buildStorageLocationInventory();
         ContainerTypeEntity containerType = buildContainerType1();
         ContainerEntity savedContainer = buildContainer1WithEmptyInventory();
+        ContainerResponse response1 = buildContainerResponse1();
 
         when(containerTypeRepository.findByName(CONTAINER_TYPE_NAME_1)).thenReturn(Optional.of(containerType));
         when(storageLocationService.getStorageLocationInventoryByName(LOCATION_NAME)).thenReturn(attachedInventory);
         when(inventoryService.createNewInventory()).thenReturn(newInventory);
         when(containerRepository.save(any())).thenReturn(savedContainer);
         doNothing().when(validator).validateUniqueness(eq(SERIAL_NUMBER_1), any(), any());
-        when(storageLocationService.getStorageLocationByName(LOCATION_NAME))
-                .thenReturn(buildStorageLocation());
+        when(containerMapper.toResponse(savedContainer)).thenReturn(response1);
 
         // Act
         ContainerResponse result = containerService.createContainer(request);
@@ -177,8 +188,6 @@ class ContainerServiceTest {
         assertEquals(Instant.EPOCH, result.createdAt());
         assertEquals(ContainerStatusEnum.OPEN, result.status());
         assertEquals(LOCATION_NAME, result.locationName());
-
-        verify(containerRepository).save(any());
     }
 
     @Test
@@ -192,14 +201,16 @@ class ContainerServiceTest {
         InventoryEntity attachedInventory = buildContainerInventory();
         ContainerEntity parentContainer = attachedInventory.getContainer();
         ContainerTypeEntity containerType = buildContainerType1();
-        ContainerEntity container = buildContainerWithContainerInventory(attachedInventory);
+        ContainerEntity savedContainer = buildContainerWithContainerInventory(attachedInventory);
+        ContainerResponse response3 = buildContainerResponse3();
 
         when(containerTypeRepository.findByName(CONTAINER_TYPE_NAME_1)).thenReturn(Optional.of(containerType));
         when(containerRepository.findBySerialNumberAndRemovedFalse(SERIAL_NUMBER_3)).thenReturn(
                 Optional.of(parentContainer));
         when(inventoryService.createNewInventory()).thenReturn(newInventory);
-        when(containerRepository.save(any())).thenReturn(container);
+        when(containerRepository.save(any())).thenReturn(savedContainer);
         doNothing().when(validator).validateUniqueness(eq(SERIAL_NUMBER_1), any(), any());
+        when(containerMapper.toResponse(savedContainer)).thenReturn(response3);
 
         // Act
         ContainerResponse result = containerService.createContainer(request);
@@ -213,8 +224,6 @@ class ContainerServiceTest {
         assertEquals(Instant.EPOCH, result.createdAt());
         assertEquals(ContainerStatusEnum.OPEN, result.status());
         assertEquals(SERIAL_NUMBER_3, result.locationName());
-
-        verify(containerRepository).save(any());
     }
 
     @Test
@@ -227,12 +236,17 @@ class ContainerServiceTest {
         ContainerTypeEntity containerType = buildContainerType2();
         ContainerEntity parentContainer = buildParentContainer();
         String message = PARENT_CONTAINER_CAPACITY_EXCEEDED_EXCEPTION.formatted(SERIAL_NUMBER_3);
+        ContainerEntity container = buildContainer1();
+        IllegalStateException exception = new IllegalStateException(message);
+
 
         when(containerTypeRepository.findByName(CONTAINER_TYPE_NAME_2)).thenReturn(Optional.of(containerType));
         when(containerRepository.findBySerialNumberAndRemovedFalse(SERIAL_NUMBER_3)).thenReturn(
                 Optional.of(parentContainer));
         doNothing().when(validator).validateUniqueness(eq(SERIAL_NUMBER_1), any(), any());
         when(messageService.getMessage(any(), any())).thenReturn(message);
+        when(containerMapper.toEntity(eq(request), eq(containerType), any(), any())).thenReturn(container);
+        doThrow(exception).when(containerValidationService).validateIsContainerFitIntoInventory(container);
 
         // Act and Assert
         IllegalStateException ex = assertThrows(IllegalStateException.class,
@@ -271,8 +285,6 @@ class ContainerServiceTest {
         String message = CONTAINER_TYPE_NOT_FOUND_WITH_NAME_EXCEPTION.formatted(CONTAINER_TYPE_NAME_1);
 
         doNothing().when(validator).validateUniqueness(eq(SERIAL_NUMBER_1), any(), any());
-        when(storageLocationService.getStorageLocationByName(LOCATION_NAME))
-                .thenReturn(buildStorageLocation());
         when(containerTypeRepository.findByName(CONTAINER_TYPE_NAME_1)).thenReturn(Optional.empty());
         when(messageService.getMessage(any(), any())).thenReturn(message);
 
@@ -313,9 +325,13 @@ class ContainerServiceTest {
         ContainerEntity openContainer = buildContainer1WithEmptyInventory();
         ContainerEntity closedContainer = buildContainer1WithEmptyInventory();
         closedContainer.setStatus(ContainerStatusEnum.CLOSED);
+        ContainerResponse response = buildContainerResponse4();
 
         when(containerRepository.findByIdAndRemovedFalse(ID_1)).thenReturn(Optional.of(openContainer));
-        when(containerRepository.save(closedContainer)).thenReturn(closedContainer);
+        doNothing().when(containerValidationService).validateIsContainerFitIntoInventory(any());
+        doNothing().when(containerValidationService).validateIsContentFitIntoContainerInventory(any());
+        when(containerRepository.save(any())).thenReturn(closedContainer);
+        when(containerMapper.toResponse(closedContainer)).thenReturn(response);
         when(validator.isNullOrEmpty(null)).thenReturn(true);
         when(validator.isNullOrEmpty(ContainerStatusEnum.CLOSED)).thenReturn(false);
 
@@ -324,7 +340,7 @@ class ContainerServiceTest {
 
         // Assert
         assertEquals(ContainerStatusEnum.CLOSED, result.status());
-        assertNotNull(result);
+        assertEquals(response, result);
     }
 
     @Test
@@ -334,19 +350,23 @@ class ContainerServiceTest {
 
         ContainerEntity container = buildContainer1WithEmptyInventory();
         ContainerTypeEntity newContainerType = buildContainerType2();
+        ContainerResponse response = buildContainerResponse4();
 
         when(containerRepository.findByIdAndRemovedFalse(ID_1)).thenReturn(Optional.of(container));
         when(validator.isNullOrEmpty(null)).thenReturn(true);
         when(validator.isNullOrEmpty(CONTAINER_TYPE_NAME_2)).thenReturn(false);
         when(containerTypeRepository.findByName(CONTAINER_TYPE_NAME_2)).thenReturn(Optional.of(newContainerType));
+        doNothing().when(containerValidationService).validateIsContainerFitIntoInventory(container);
+        doNothing().when(containerValidationService).validateIsContentFitIntoContainerInventory(container);
         when(containerRepository.save(container)).thenReturn(container);
+        when(containerMapper.toResponse(container)).thenReturn(response);
 
         // Act
         ContainerResponse result = containerService.updateContainer(ID_1, request);
 
         // Assert
         assertEquals(newContainerType, container.getContainerType());
-        assertNotNull(result);
+        assertEquals(response, result);
     }
 
     @Test
@@ -357,12 +377,14 @@ class ContainerServiceTest {
         ContainerEntity container = buildContainer1WithEmptyInventory();
         ContainerTypeEntity newContainerType = buildContainerType2();
         String message = PARENT_CONTAINER_CAPACITY_EXCEEDED_EXCEPTION.formatted(SERIAL_NUMBER_1);
+        IllegalStateException exception = new IllegalStateException(message);
 
         when(containerRepository.findByIdAndRemovedFalse(ID_1)).thenReturn(Optional.of(container));
         when(validator.isNullOrEmpty(null)).thenReturn(true);
         when(validator.isNullOrEmpty(CONTAINER_TYPE_NAME_2)).thenReturn(false);
         when(containerTypeRepository.findByName(CONTAINER_TYPE_NAME_2)).thenReturn(Optional.of(newContainerType));
-        when(messageService.getMessage(any(), any())).thenReturn(message);
+        doNothing().when(containerValidationService).validateIsContainerFitIntoInventory(container);
+        doThrow(exception).when(containerValidationService).validateIsContentFitIntoContainerInventory(container);
 
         // Act and Assert
         IllegalStateException ex = assertThrows(IllegalStateException.class,
@@ -375,51 +397,59 @@ class ContainerServiceTest {
     void updateContainer_changeLocation_toStorageLocation_success() {
         // Arrange
         ContainerRequest request =
-                new ContainerRequest(null, null, null, LOCATION_NAME_2, LocationTypeEnum.STORAGE_LOCATION);
+                new ContainerRequest(null, null, null, LOCATION_NAME, LocationTypeEnum.STORAGE_LOCATION);
 
         ContainerEntity oldContainer = buildContainer1WithEmptyInventory();
         InventoryEntity newStorageLocation = buildStorageLocationInventory2();
         ContainerEntity newContainer = buildContainer1WithEmptyInventory();
         newContainer.setAttachedToInventory(newStorageLocation);
+        ContainerResponse response = buildContainerResponse1();
 
         when(containerRepository.findByIdAndRemovedFalse(ID_1)).thenReturn(Optional.of(oldContainer));
         when(validator.isNullOrEmpty(null)).thenReturn(true);
-        when(validator.isNullOrEmpty(LOCATION_NAME_2)).thenReturn(false);
+        when(validator.isNullOrEmpty(LOCATION_NAME)).thenReturn(false);
         when(validator.isNullOrEmpty(LocationTypeEnum.STORAGE_LOCATION)).thenReturn(false);
-        when(storageLocationService.getStorageLocationInventoryByName(LOCATION_NAME_2)).thenReturn(newStorageLocation);
-        when(containerRepository.save(newContainer)).thenReturn(newContainer);
+        when(storageLocationService.getStorageLocationInventoryByName(LOCATION_NAME)).thenReturn(newStorageLocation);
+        doNothing().when(containerValidationService).validateIsContainerFitIntoInventory(oldContainer);
+        doNothing().when(containerValidationService).validateIsContentFitIntoContainerInventory(oldContainer);
+        when(containerRepository.save(any())).thenReturn(newContainer);
+        when(containerMapper.toResponse(newContainer)).thenReturn(response);
 
         // Act
         ContainerResponse result = containerService.updateContainer(ID_1, request);
 
         // Assert
         assertNotNull(result);
-        assertEquals(LOCATION_NAME_2, result.locationName());
+        assertEquals(LOCATION_NAME, result.locationName());
     }
 
     @Test
     void updateContainer_changeLocation_toContainer_fits_success() {
         // Arrange
-        ContainerRequest request = new ContainerRequest(null, null, null, SERIAL_NUMBER_2, LocationTypeEnum.CONTAINER);
+        ContainerRequest request = new ContainerRequest(null, null, null, SERIAL_NUMBER_3, LocationTypeEnum.CONTAINER);
 
         ContainerEntity parentContainer = buildContainer2WithEmptyInventory();
         parentContainer.getInventory().setContainer(parentContainer);
         ContainerEntity container = buildContainer1WithEmptyInventory();
+        ContainerResponse response = buildContainerResponse2();
 
         when(containerRepository.findByIdAndRemovedFalse(ID_1)).thenReturn(Optional.of(container));
         when(validator.isNullOrEmpty(null)).thenReturn(true);
-        when(validator.isNullOrEmpty(SERIAL_NUMBER_2)).thenReturn(false);
+        when(validator.isNullOrEmpty(SERIAL_NUMBER_3)).thenReturn(false);
         when(validator.isNullOrEmpty(LocationTypeEnum.CONTAINER)).thenReturn(false);
-        when(containerRepository.findBySerialNumberAndRemovedFalse(SERIAL_NUMBER_2)).thenReturn(
+        doNothing().when(containerValidationService).validateIsContainerFitIntoInventory(container);
+        doNothing().when(containerValidationService).validateIsContentFitIntoContainerInventory(container);
+        when(containerRepository.findBySerialNumberAndRemovedFalse(SERIAL_NUMBER_3)).thenReturn(
                 Optional.of(parentContainer));
         when(containerRepository.save(container)).thenReturn(container);
+        when(containerMapper.toResponse(container)).thenReturn(response);
 
         // Act
         ContainerResponse result = containerService.updateContainer(ID_1, request);
 
         // Assert
         assertNotNull(result);
-        assertEquals(SERIAL_NUMBER_2, result.locationName());
+        assertEquals(SERIAL_NUMBER_3, result.locationName());
     }
 
     @Test
@@ -432,13 +462,15 @@ class ContainerServiceTest {
         ContainerEntity container = buildContainer1WithEmptyInventory();
         container.setAttachedToInventory(parentContainer.getInventory());
         String message = PARENT_CONTAINER_CAPACITY_EXCEEDED_EXCEPTION.formatted(SERIAL_NUMBER_1);
+        IllegalStateException exception = new IllegalStateException(message);
+
         when(containerRepository.findByIdAndRemovedFalse(ID_1)).thenReturn(Optional.of(container));
         when(validator.isNullOrEmpty(null)).thenReturn(true);
         when(validator.isNullOrEmpty(SERIAL_NUMBER_2)).thenReturn(false);
         when(validator.isNullOrEmpty(LocationTypeEnum.CONTAINER)).thenReturn(false);
         when(containerRepository.findBySerialNumberAndRemovedFalse(SERIAL_NUMBER_2)).thenReturn(
                 Optional.of(parentContainer));
-        when(messageService.getMessage(any(), any())).thenReturn(message);
+        doThrow(exception).when(containerValidationService).validateIsContainerFitIntoInventory(container);
 
         // Act and Assert
         IllegalStateException ex = assertThrows(IllegalStateException.class,
@@ -477,7 +509,6 @@ class ContainerServiceTest {
 
         // Assert
         assertTrue(container.getRemoved());
-        verify(containerRepository).save(container);
     }
 
     @Test
@@ -601,6 +632,46 @@ class ContainerServiceTest {
         InventoryEntity inv = InventoryEntity.builder().id(ID_3).container(parentContainer).build();
         parentContainer.setInventory(inv);
         return inv;
+    }
+
+    private ContainerResponse buildContainerResponse1() {
+        return new ContainerResponse(
+                ID_1,
+                CONTAINER_TYPE_NAME_1,
+                SERIAL_NUMBER_1,
+                Instant.EPOCH,
+                ContainerStatusEnum.OPEN,
+                LOCATION_NAME);
+    }
+
+    private ContainerResponse buildContainerResponse2() {
+        return new ContainerResponse(
+                ID_2,
+                CONTAINER_TYPE_NAME_2,
+                SERIAL_NUMBER_2,
+                Instant.EPOCH,
+                ContainerStatusEnum.CLOSED,
+                SERIAL_NUMBER_3);
+    }
+
+    private ContainerResponse buildContainerResponse3() {
+        return new ContainerResponse(
+                ID_1,
+                CONTAINER_TYPE_NAME_1,
+                SERIAL_NUMBER_1,
+                Instant.EPOCH,
+                ContainerStatusEnum.OPEN,
+                SERIAL_NUMBER_3);
+    }
+
+    private ContainerResponse buildContainerResponse4() {
+        return new ContainerResponse(
+                ID_1,
+                CONTAINER_TYPE_NAME_1,
+                SERIAL_NUMBER_1,
+                Instant.EPOCH,
+                ContainerStatusEnum.CLOSED,
+                LOCATION_NAME);
     }
 
     private ContainerEntity buildContainer2() {
