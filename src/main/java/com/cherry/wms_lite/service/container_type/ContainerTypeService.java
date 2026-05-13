@@ -38,7 +38,8 @@ public class ContainerTypeService {
         return containerTypeRepository.findById(containerTypeId)
                 .map(containerTypeMapper::toResponse)
                 .orElseThrow(() -> new EntityNotFoundException(
-                                messageService.getMessage(ExceptionMessageKeys.CONTAINER_TYPE_NOT_FOUND_WITH_ID, containerTypeId)));
+                        messageService.getMessage(ExceptionMessageKeys.CONTAINER_TYPE_NOT_FOUND_WITH_ID,
+                                containerTypeId)));
     }
 
     @Transactional
@@ -54,7 +55,8 @@ public class ContainerTypeService {
     public ContainerTypeResponse updateContainerType(final Long containerTypeId, final ContainerTypeRequest request) {
         ContainerTypeEntity containerType = containerTypeRepository.findById(containerTypeId)
                 .orElseThrow(() -> new EntityNotFoundException(
-                                messageService.getMessage(ExceptionMessageKeys.CONTAINER_TYPE_NOT_FOUND_WITH_ID, containerTypeId)));
+                        messageService.getMessage(ExceptionMessageKeys.CONTAINER_TYPE_NOT_FOUND_WITH_ID,
+                                containerTypeId)));
 
         updateNameIfProvided(request, containerType);
         updateDescriptionIfProvided(request, containerType);
@@ -73,7 +75,8 @@ public class ContainerTypeService {
         }
         if (containerRepository.existsByContainerType_Id(containerTypeId)) {
             throw new IllegalStateException(
-                    messageService.getMessage(ExceptionMessageKeys.CONTAINER_TYPE_CONTAINERS_STILL_EXIST, containerTypeId));
+                    messageService.getMessage(ExceptionMessageKeys.CONTAINER_TYPE_CONTAINERS_STILL_EXIST,
+                            containerTypeId));
         }
 
         containerTypeRepository.deleteById(containerTypeId);

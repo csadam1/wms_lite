@@ -41,10 +41,9 @@ public class StorageLocationService {
     public StorageLocationResponse getStorageLocationById(final Long storageLocationId) {
         return storageLocationRepository.findById(storageLocationId)
                 .map(storageLocationMapper::toResponse)
-                .orElseThrow(
-                        () -> new EntityNotFoundException(
-                                messageService.getMessage(ExceptionMessageKeys.STORAGE_LOCATION_NOT_FOUND_WITH_ID,
-                                        storageLocationId)));
+                .orElseThrow(() -> new EntityNotFoundException(
+                        messageService.getMessage(ExceptionMessageKeys.STORAGE_LOCATION_NOT_FOUND_WITH_ID,
+                                storageLocationId)));
     }
 
     public List<StorageLocationResponse> getAllStorageLocations() {
@@ -68,8 +67,8 @@ public class StorageLocationService {
     {
         StorageLocationEntity storageLocationEntity = storageLocationRepository.findById(storageLocationId)
                 .orElseThrow(() -> new EntityNotFoundException(
-                                messageService.getMessage(ExceptionMessageKeys.STORAGE_LOCATION_NOT_FOUND_WITH_ID,
-                                        storageLocationId)));
+                        messageService.getMessage(ExceptionMessageKeys.STORAGE_LOCATION_NOT_FOUND_WITH_ID,
+                                storageLocationId)));
 
         updateNameIfProvided(request, storageLocationEntity);
         updateDescriptionIfProvided(request, storageLocationEntity);
@@ -81,11 +80,13 @@ public class StorageLocationService {
     public void deleteStorageLocationById(final Long storageLocationId) {
         if (!storageLocationRepository.existsById(storageLocationId)) {
             throw new EntityNotFoundException(
-                    messageService.getMessage(ExceptionMessageKeys.STORAGE_LOCATION_NOT_FOUND_WITH_ID, storageLocationId));
+                    messageService.getMessage(ExceptionMessageKeys.STORAGE_LOCATION_NOT_FOUND_WITH_ID,
+                            storageLocationId));
         }
         if (containerRepository.existsByRemovedFalseAndAttachedToInventory_StorageLocation_Id(storageLocationId)) {
             throw new IllegalStateException(
-                    messageService.getMessage(ExceptionMessageKeys.STORAGE_LOCATION_WITH_ID_NOT_EMPTY, storageLocationId));
+                    messageService.getMessage(ExceptionMessageKeys.STORAGE_LOCATION_WITH_ID_NOT_EMPTY,
+                            storageLocationId));
         }
 
         storageLocationRepository.deleteById(storageLocationId);
@@ -104,8 +105,7 @@ public class StorageLocationService {
     {
         if (!validator.isNullOrEmpty(request.name())) {
             validator.validateUniqueness(request.name(), storageLocationRepository::findByName,
-                    messageService.getMessage(ExceptionMessageKeys.STORAGE_LOCATION_NAME_EXISTS, request.name())
-            );
+                    messageService.getMessage(ExceptionMessageKeys.STORAGE_LOCATION_NAME_EXISTS, request.name()));
             storageLocationEntity.setName(request.name());
         }
     }

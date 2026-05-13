@@ -86,9 +86,8 @@ public class ContainerService {
 
     private ContainerTypeEntity getContainerTypeByName(final String name) {
         return containerTypeRepository.findByName(name)
-                .orElseThrow(
-                        () -> new EntityNotFoundException(
-                                messageService.getMessage(ExceptionMessageKeys.CONTAINER_TYPE_NOT_FOUND_WITH_NAME, name)));
+                .orElseThrow(() -> new EntityNotFoundException(
+                        messageService.getMessage(ExceptionMessageKeys.CONTAINER_TYPE_NOT_FOUND_WITH_NAME, name)));
     }
 
     private void changeSerialNumberIfProvided(final ContainerEntity container, final ContainerRequest request) {
@@ -149,7 +148,7 @@ public class ContainerService {
     private InventoryEntity getContainerAttachedToInventory(final String locationName,
                                                             final LocationTypeEnum locationTypeEnum)
     {
-        return locationTypeEnum.equals(LocationTypeEnum.CONTAINER)
+        return LocationTypeEnum.CONTAINER.equals(locationTypeEnum)
                 ? getContainerInventory(locationName)
                 : storageLocationService.getStorageLocationInventoryByName(locationName);
     }
@@ -162,8 +161,7 @@ public class ContainerService {
 
     private ContainerEntity getContainerEntityByName(final String serialNumber) {
         return containerRepository.findBySerialNumberAndRemovedFalse(serialNumber)
-                .orElseThrow(
-                        () -> new EntityNotFoundException(
-                                messageService.getMessage(ExceptionMessageKeys.CONTAINER_NOT_FOUND_WITH_SERIAL, serialNumber)));
+                .orElseThrow(() -> new EntityNotFoundException(
+                        messageService.getMessage(ExceptionMessageKeys.CONTAINER_NOT_FOUND_WITH_SERIAL, serialNumber)));
     }
 }
